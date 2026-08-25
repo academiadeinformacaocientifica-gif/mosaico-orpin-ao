@@ -27,6 +27,7 @@ interface ArticleRow {
   comments: Comment[] | null;
   is_featured: boolean;
   is_carousel: boolean;
+  is_published: boolean;
   tags: string[] | null;
   created_at: string;
   updated_at: string;
@@ -36,6 +37,7 @@ export type ArticleInput = Omit<Article, 'likes' | 'commentsCount' | 'comments'>
   likes?: number;
   commentsCount?: number;
   comments?: Comment[];
+  isPublished?: boolean;
 };
 
 function rowToArticle(row: ArticleRow): Article {
@@ -62,6 +64,7 @@ function rowToArticle(row: ArticleRow): Article {
     comments: row.comments || undefined,
     isFeatured: row.is_featured,
     isCarousel: row.is_carousel,
+    isPublished: row.is_published ?? true,
     tags: row.tags || [],
   };
 }
@@ -88,6 +91,7 @@ function articleToRow(article: ArticleInput): Omit<ArticleRow, 'created_at' | 'u
     comments: article.comments || [],
     is_featured: Boolean(article.isFeatured),
     is_carousel: Boolean(article.isCarousel),
+    is_published: article.isPublished !== false,
     tags: article.tags || [],
   };
 }

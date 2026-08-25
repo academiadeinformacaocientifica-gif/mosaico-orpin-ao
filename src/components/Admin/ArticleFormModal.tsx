@@ -4,7 +4,7 @@
  */
 
 import React, { useRef, useState } from 'react';
-import { X, Upload, Loader2, Save } from 'lucide-react';
+import { X, Upload, Loader2, Save, Newspaper } from 'lucide-react';
 import { Article, CategoryId } from '../../types';
 import { ArticleInput, slugify, uploadArticleImage } from '../../lib/articleService';
 
@@ -24,7 +24,7 @@ const CATEGORY_OPTIONS: { id: CategoryId; label: string }[] = [
 interface ArticleFormModalProps {
   initialArticle: Article | null; // null = criar novo
   onClose: () => void;
-  onSave: (id: string | null, input: ArticleInput) => Promise<void>;
+  onSave: (id: string | null, input: ArticleInput, isPublished: boolean) => Promise<void>;
 }
 
 function todayIso(): string {
@@ -90,8 +90,7 @@ export const ArticleFormModal: React.FC<ArticleFormModalProps> = ({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAction = async (isPublished: boolean) => {
     setError(null);
 
     if (!title.trim() || !description.trim() || !imageUrl.trim()) {
@@ -126,6 +125,7 @@ export const ArticleFormModal: React.FC<ArticleFormModalProps> = ({
         .filter(Boolean),
       isFeatured,
       isCarousel,
+      isPublished,
       likes: initialArticle?.likes,
       commentsCount: initialArticle?.commentsCount,
       comments: initialArticle?.comments,
@@ -133,12 +133,17 @@ export const ArticleFormModal: React.FC<ArticleFormModalProps> = ({
 
     setSaving(true);
     try {
-      await onSave(initialArticle?.id || null, input);
+      await onSave(initialArticle?.id || null, input, isPublished);
     } catch (err) {
       setError('Não foi possível guardar a notícia. Tente novamente.');
       console.error(err);
       setSaving(false);
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleAction(true);
   };
 
   return (
@@ -345,18 +350,27 @@ export const ArticleFormModal: React.FC<ArticleFormModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="text-xs font-semibold text-[#666] hover:text-[#111] px-4 py-2 rounded-lg transition-colors"
+            className="text-xs font-semibold text-[#666] hover:text-[#111] px-4 py-2 rounded-lg transition-colors cursor-pointer"
           >
             Cancelar
           </button>
           <button
             type="button"
-            onClick={handleSubmit}
+            onClick={() => handleAction(false)}
             disabled={saving || uploading}
-            className="flex items-center gap-1.5 bg-[#d9251d] hover:bg-[#b91e17] disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-xs"
+            className="flex items-center gap-1.5 bg-gray-200 hover:bg-gray-300 disabled:opacity-60 text-gray-800 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {saving ? 'A guardar...' : 'Guardar Notícia'}
+            Guardar Rascunho
+          </button>
+          <button
+            type="button"
+            onClick={() => handleAction(true)}
+            disabled={saving || uploading}
+            className="flex items-center gap-1.5 bg-[#d9251d] hover:bg-[#b91e17] disabled:opacity-60 text-white text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-xs cursor-pointer"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Newspaper className="w-4 h-4" />}
+            Publicar Notícia
           </button>
         </div>
       </div>

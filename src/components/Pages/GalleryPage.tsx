@@ -1,121 +1,21 @@
 import React, { useState } from 'react';
 import { Image as ImageIcon, Search, Filter, Download, X, Eye, Calendar, Sparkles } from 'lucide-react';
-
-import cooperacaoBilateralImg from '../../assets/images/Angola e Espanha reforçam cooperação bilateral.jpeg';
-import credenciaisBalbinaImg from '../../assets/images/credenciais_balbina_silva_1787483613500.jpg.jpeg';
-import diaMulherAfricanaImg from '../../assets/images/dia_mulher_africana_1787482964722.jpg.jpeg';
-import forumRecursosMineraisImg from '../../assets/images/forum_recursos_minerais_17487483460820.jpg.jpeg';
-import iconMosaicoSquareImg from '../../assets/images/icon_mosaico_square_1787501925065.jpg';
-import imexBarcelonaImg from '../../assets/images/imex_barcelona_angola_1787497730037.jpg.jpeg';
-import independencia50Img from '../../assets/images/independencia_50_madrid_1787496814208.jpg.jpeg';
-import logoMosaicoImg from '../../assets/images/logo_mosaico.jpeg';
-import onuTurismoImg from '../../assets/images/onu_turismo_madrid_1787497879619.jpg.jpeg';
-import vityNsalambiImg from '../../assets/images/vity_nsalambi_sagrada_familia_1787497295778.jpg.jpeg';
-
-interface GalleryItem {
-  id: string;
-  title: string;
-  category: string;
-  date: string;
-  description: string;
-  image: string;
-}
-
-const galleryItems: GalleryItem[] = [
-  {
-    id: 'gal-1',
-    title: 'Cooperação Bilateral Angola-Espanha em Madrid',
-    category: 'Diplomacia',
-    date: '4 de Junho, 2026',
-    description: 'Reunião de Consultas Políticas ao nível de Secretários de Estado, copresidida por Esmeralda Mendonça e Diego Martínez Belío, reforçando parcerias estratégicas.',
-    image: cooperacaoBilateralImg
-  },
-  {
-    id: 'gal-2',
-    title: 'Apresentação de Cartas Credenciais',
-    category: 'Institucional',
-    date: '2026',
-    description: 'Cerimónia oficial de acreditação diplomática da Embaixada da República de Angola no Reino de Espanha.',
-    image: credenciaisBalbinaImg
-  },
-  {
-    id: 'gal-3',
-    title: 'Celebração do Dia da Mulher Africana',
-    category: 'Cultura',
-    date: '2026',
-    description: 'Encontro comemorativo em Madrid destacando o contributo fulcral das mulheres angolanas para o desenvolvimento social e cultural.',
-    image: diaMulherAfricanaImg
-  },
-  {
-    id: 'gal-4',
-    title: 'Fórum de Recursos Minerais e Investimento',
-    category: 'Economia',
-    date: '2026',
-    description: 'Apresentação de oportunidades de investimento em sectores estruturantes, transição energética e mineração sustentável.',
-    image: forumRecursosMineraisImg
-  },
-  {
-    id: 'gal-5',
-    title: 'Selo Oficial Mosaico',
-    category: 'Institucional',
-    date: '2026',
-    description: 'Selo gráfico e representação oficial da plataforma de difusão diplomática e consular.',
-    image: iconMosaicoSquareImg
-  },
-  {
-    id: 'gal-6',
-    title: 'Participação na Feira IMEX Barcelona',
-    category: 'Economia',
-    date: '2026',
-    description: 'Promoção do ambiente de negócios de Angola, atração de investimento estrangeiro e fomento de parcerias com o empresariado catalão.',
-    image: imexBarcelonaImg
-  },
-  {
-    id: 'gal-7',
-    title: 'Comemorações dos 50 Anos da Independência',
-    category: 'Cultura',
-    date: '2026',
-    description: 'Conferências, mostras históricas e celebrações solenes alusivas ao cinquentenário da independência nacional em Madrid.',
-    image: independencia50Img
-  },
-  {
-    id: 'gal-8',
-    title: 'Logótipo Oficial Revista Mosaico',
-    category: 'Institucional',
-    date: '2026',
-    description: 'Identidade visual corporativa da revista oficial e plataforma diplomática da Embaixada de Angola.',
-    image: logoMosaicoImg
-  },
-  {
-    id: 'gal-9',
-    title: 'Encontro na Sede da ONU Turismo (Madrid)',
-    category: 'Diplomacia',
-    date: '2026',
-    description: 'Diálogo institucional focado no desenvolvimento do turismo sustentável e projeção internacional de Angola.',
-    image: onuTurismoImg
-  },
-  {
-    id: 'gal-10',
-    title: 'Visita Institucional à Sagrada Família (Barcelona)',
-    category: 'Turismo & Cultura',
-    date: '2026',
-    description: 'Intercâmbio cultural e contactos institucionais de alto nível realizados na Catalunha.',
-    image: vityNsalambiImg
-  }
-];
+import { GalleryItem } from '../../types';
+import { initialGalleryItems } from '../../data/galleryData';
 
 interface GalleryPageProps {
+  items?: GalleryItem[];
   onShowToast: (msg: string) => void;
 }
 
-export const GalleryPage: React.FC<GalleryPageProps> = ({ onShowToast }) => {
+export const GalleryPage: React.FC<GalleryPageProps> = ({ items = initialGalleryItems, onShowToast }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('todos');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeImage, setActiveImage] = useState<GalleryItem | null>(null);
 
   const categories = ['todos', 'Diplomacia', 'Institucional', 'Cultura', 'Economia', 'Turismo & Cultura'];
 
-  const filteredItems = galleryItems.filter((item) => {
+  const filteredItems = items.filter((item) => {
     const matchesCategory = selectedCategory === 'todos' || item.category === selectedCategory;
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           item.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -137,7 +37,7 @@ export const GalleryPage: React.FC<GalleryPageProps> = ({ onShowToast }) => {
         </div>
         <div className="bg-red-50 border border-red-200 px-4 py-2 rounded-full font-semibold text-xs text-[#d9251d] flex items-center gap-2 shrink-0">
           <Sparkles className="w-4 h-4" />
-          <span>{galleryItems.length} Registos Fotográficos</span>
+          <span>{items.length} Registos Fotográficos</span>
         </div>
       </div>
 

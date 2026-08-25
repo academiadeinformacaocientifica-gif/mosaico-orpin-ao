@@ -41,6 +41,7 @@ create table if not exists public.articles (
   comments       jsonb not null default '[]'::jsonb,
   is_featured    boolean not null default false,
   is_carousel    boolean not null default false,
+  is_published   boolean not null default true,
   tags           text[] not null default '{}',
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now()
@@ -119,3 +120,79 @@ drop policy if exists "Remoção de imagens de notícias" on storage.objects;
 create policy "Remoção de imagens de notícias"
   on storage.objects for delete
   using (bucket_id = 'article-images');
+
+-- 5. TABELA DE IMAGENS DA GALERIA -------------------------------------------
+create table if not exists public.gallery_items (
+  id             uuid primary key default gen_random_uuid(),
+  title          text not null,
+  category       text not null default 'Diplomacia',
+  date_label     text not null default '2026',
+  description    text not null default '',
+  image_url      text not null,
+  is_published   boolean not null default true,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+
+alter table public.gallery_items enable row level security;
+
+drop policy if exists "Leitura pública de galeria" on public.gallery_items;
+create policy "Leitura pública de galeria"
+  on public.gallery_items for select
+  using (true);
+
+drop policy if exists "Inserção de galeria" on public.gallery_items;
+create policy "Inserção de galeria"
+  on public.gallery_items for insert
+  with check (true);
+
+drop policy if exists "Atualização de galeria" on public.gallery_items;
+create policy "Atualização de galeria"
+  on public.gallery_items for update
+  using (true)
+  with check (true);
+
+drop policy if exists "Remoção de galeria" on public.gallery_items;
+create policy "Remoção de galeria"
+  on public.gallery_items for delete
+  using (true);
+
+-- 6. TABELA DE VÍDEOS --------------------------------------------------------
+create table if not exists public.video_items (
+  id             uuid primary key default gen_random_uuid(),
+  title          text not null,
+  category       text not null default 'Diplomacia',
+  duration       text not null default '10:00',
+  date_label     text not null default '2026',
+  views          text not null default '1.2mil visualizações',
+  description    text not null default '',
+  image_url      text not null,
+  video_url      text,
+  is_published   boolean not null default true,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+
+alter table public.video_items enable row level security;
+
+drop policy if exists "Leitura pública de vídeos" on public.video_items;
+create policy "Leitura pública de vídeos"
+  on public.video_items for select
+  using (true);
+
+drop policy if exists "Inserção de vídeos" on public.video_items;
+create policy "Inserção de vídeos"
+  on public.video_items for insert
+  with check (true);
+
+drop policy if exists "Atualização de vídeos" on public.video_items;
+create policy "Atualização de vídeos"
+  on public.video_items for update
+  using (true)
+  with check (true);
+
+drop policy if exists "Remoção de vídeos" on public.video_items;
+create policy "Remoção de vídeos"
+  on public.video_items for delete
+  using (true);
+

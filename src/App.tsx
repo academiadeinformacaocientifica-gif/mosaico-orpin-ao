@@ -4,8 +4,10 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { NavPage, Article, MagazineEdition, CategoryId } from './types';
+import { NavPage, Article, MagazineEdition, CategoryId, GalleryItem, VideoItem } from './types';
 import { initialArticles } from './data/articles';
+import { initialGalleryItems } from './data/galleryData';
+import { initialVideoItems } from './data/videosData';
 import { magazineEditions } from './data/magazineEditions';
 import { upcomingEvents } from './data/events';
 import { Header } from './components/Header';
@@ -26,6 +28,8 @@ import { VideosPage } from './components/Pages/VideosPage';
 import { ArticleCard } from './components/ArticleCard';
 import { AdminGate } from './components/Admin/AdminGate';
 import { fetchArticles } from './lib/articleService';
+import { fetchGalleryItems } from './lib/galleryService';
+import { fetchVideoItems } from './lib/videoService';
 import { isSupabaseConfigured } from './lib/supabase';
 import { Search, X, FolderSearch } from 'lucide-react';
 
@@ -39,6 +43,8 @@ function getInitialPage(): NavPage {
 export default function App() {
   const [currentPage, setCurrentPage] = useState<NavPage>(getInitialPage);
   const [articles, setArticles] = useState<Article[]>(initialArticles);
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(initialGalleryItems);
+  const [videoItems, setVideoItems] = useState<VideoItem[]>(initialVideoItems);
   const [articlesLoading, setArticlesLoading] = useState(isSupabaseConfigured);
   const [articlesError, setArticlesError] = useState<string | null>(null);
 
@@ -57,9 +63,29 @@ export default function App() {
     }
   }, []);
 
+  const loadGalleryFromBackend = useCallback(async () => {
+    try {
+      const items = await fetchGalleryItems();
+      setGalleryItems(items.length > 0 ? items : initialGalleryItems);
+    } catch (err) {
+      console.error('Erro ao carregar galeria:', err);
+    }
+  }, []);
+
+  const loadVideosFromBackend = useCallback(async () => {
+    try {
+      const items = await fetchVideoItems();
+      setVideoItems(items.length > 0 ? items : initialVideoItems);
+    } catch (err) {
+      console.error('Erro ao carregar vídeos:', err);
+    }
+  }, []);
+
   useEffect(() => {
     loadArticlesFromBackend();
-  }, [loadArticlesFromBackend]);
+    loadGalleryFromBackend();
+    loadVideosFromBackend();
+  }, [loadArticlesFromBackend, loadGalleryFromBackend, loadVideosFromBackend]);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -254,21 +280,25 @@ export default function App() {
     showToast('Todos os favoritos foram limpos.');
   };
 
-  const carouselArticles = useMemo(() => {
-    return articles;
-  }, [articles]);
-  
-  const secondaryArticles = useMemo(() => {
-    return articles.slice(1, 3);
+  const publicArticles = useMemo(() => {
+    return articles.filter((a) => a.isPublished !== false);
   }, [articles]);
 
+  const carouselArticles = useMemo(() => {
+    return publicArticles;
+  }, [publicArticles]);
+  
+  const secondaryArticles = useMemo(() => {
+    return publicArticles.slice(1, 3);
+  }, [publicArticles]);
+
   const latestArticles = useMemo(() => {
-    return [...articles].sort((a, b) => {
+    return [...publicArticles].sort((a, b) => {
       const dateA = a.isoDate ? new Date(a.isoDate).getTime() : 0;
       const dateB = b.isoDate ? new Date(b.isoDate).getTime() : 0;
       return dateB - dateA;
     });
-  }, [articles]);
+  }, [publicArticles]);
 
   const favoriteArticles = useMemo(
     () => articles.filter((a) => bookmarkedIds.has(a.id)),
@@ -278,14 +308,14 @@ export default function App() {
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
     const q = searchQuery.toLowerCase();
-    return articles.filter(
+    return publicArticles.filter(
       (a) =>
         a.title.toLowerCase().includes(q) ||
         a.description.toLowerCase().includes(q) ||
         a.category.toLowerCase().includes(q) ||
         a.tags?.some((t) => t.toLowerCase().includes(q))
     );
-  }, [articles, searchQuery]);
+  }, [publicArticles, searchQuery]);
 
   const handleNavigate = (page: NavPage) => {
     setCurrentPage(page);
@@ -360,13 +390,27 @@ export default function App() {
     },
   };
 
+  const publicGalleryItems = useMemo(
+    () => galleryItems.filter((i) => i.isPublished !== false),
+    [galleryItems]
+  );
+
+  const publicVideoItems = useMemo(
+    () => videoItems.filter((v) => v.isPublished !== false),
+    [videoItems]
+  );
+
   if (currentPage === 'admin') {
     return (
       <AdminGate
         articles={articles}
+        galleryItems={galleryItems}
+        videoItems={videoItems}
         articlesLoading={articlesLoading}
         articlesError={articlesError}
         onArticlesChanged={loadArticlesFromBackend}
+        onGalleryChanged={loadGalleryFromBackend}
+        onVideosChanged={loadVideosFromBackend}
         onGoToSite={() => handleNavigate('home')}
         onShowToast={showToast}
       />
@@ -482,7 +526,7 @@ export default function App() {
                 categoryId={currentPage as CategoryId}
                 title={categoryConfigs[currentPage as CategoryId].title}
                 subtitle={categoryConfigs[currentPage as CategoryId].subtitle}
-                articles={currentPage === 'todas' ? articles : articles.filter((a) => {
+                articles={currentPage === 'todas' ? publicArticles : publicArticles.filter((a) => {
                   if (a.categoryId === currentPage) return true;
                   if (currentPage === 'politica' && (a.categoryId === 'analise-global' || a.category.toLowerCase().includes('politic') || a.category.toLowerCase().includes('análise'))) return true;
                   if (currentPage === 'economia' && (a.categoryId === 'economia' || a.category.toLowerCase().includes('economi'))) return true;
@@ -500,7 +544,7 @@ export default function App() {
             {/* MEU FEED */}
             {currentPage === 'feed' && (
               <FeedPage
-                articles={articles}
+                articles={publicArticles}
                 onOpenArticle={handleOpenArticle}
                 onToggleBookmark={handleToggleBookmark}
                 onToggleLike={handleToggleLike}
@@ -528,7 +572,7 @@ export default function App() {
             {/* BLOG */}
             {currentPage === 'blog' && (
               <BlogPage
-                articles={articles.filter((a) => a.categoryId === 'blog' || a.category.includes('Opinião'))}
+                articles={publicArticles.filter((a) => a.categoryId === 'blog' || a.category.includes('Opinião'))}
                 onOpenArticle={handleOpenArticle}
                 onToggleBookmark={handleToggleBookmark}
                 onToggleLike={handleToggleLike}
@@ -547,12 +591,12 @@ export default function App() {
 
             {/* IMAGENS (GALERIA) */}
             {currentPage === 'galeria' && (
-              <GalleryPage onShowToast={showToast} />
+              <GalleryPage items={publicGalleryItems} onShowToast={showToast} />
             )}
 
             {/* VÍDEOS */}
             {currentPage === 'videos' && (
-              <VideosPage onShowToast={showToast} />
+              <VideosPage items={publicVideoItems} onShowToast={showToast} />
             )}
           </>
         )}

@@ -1,148 +1,14 @@
 import React, { useState } from 'react';
 import { Video as VideoIcon, Play, Search, Filter, Share2, Eye, Calendar, Sparkles, X, Check } from 'lucide-react';
-
-import cooperacaoBilateralImg from '../../assets/images/Angola e Espanha reforçam cooperação bilateral.jpeg';
-import credenciaisBalbinaImg from '../../assets/images/credenciais_balbina_silva_1787483613500.jpg.jpeg';
-import diaMulherAfricanaImg from '../../assets/images/dia_mulher_africana_1787482964722.jpg.jpeg';
-import forumRecursosMineraisImg from '../../assets/images/forum_recursos_minerais_17487483460820.jpg.jpeg';
-import iconMosaicoSquareImg from '../../assets/images/icon_mosaico_square_1787501925065.jpg';
-import imexBarcelonaImg from '../../assets/images/imex_barcelona_angola_1787497730037.jpg.jpeg';
-import independencia50Img from '../../assets/images/independencia_50_madrid_1787496814208.jpg.jpeg';
-import logoMosaicoImg from '../../assets/images/logo_mosaico.jpeg';
-import onuTurismoImg from '../../assets/images/onu_turismo_madrid_1787497879619.jpg.jpeg';
-import vityNsalambiImg from '../../assets/images/vity_nsalambi_sagrada_familia_1787497295778.jpg.jpeg';
-
-interface VideoItem {
-  id: string;
-  title: string;
-  category: string;
-  duration: string;
-  date: string;
-  views: string;
-  description: string;
-  image: string;
-  videoUrl?: string;
-}
-
-const videoItems: VideoItem[] = [
-  {
-    id: 'vid-gala',
-    title: 'Gala Miss Angola-Espanha: Celebração da Beleza e Cultura',
-    category: 'Cultura & Moda',
-    duration: '18:30',
-    date: '2026',
-    views: '5.2mil visualizações',
-    description: 'Transmissão oficial da prestigiada Gala Miss Angola-Espanha em Madrid, enaltecendo a elegância, o talento e a identidade cultural angolana na diáspora.',
-    image: independencia50Img,
-    videoUrl: 'videos/GALA MISS ANGOLA-ESPANHA.mp4'
-  },
-  {
-    id: 'vid-1',
-    title: 'Reportagem Especial: Cooperação Bilateral Angola-Espanha em Madrid',
-    category: 'Diplomacia',
-    duration: '14:20',
-    date: 'Junho de 2026',
-    views: '3.4mil visualizações',
-    description: 'Cobertura completa da reunião de consultas políticas copresidida pelos Secretários de Estado, destacando acordos estratégicos e laços históricos.',
-    image: cooperacaoBilateralImg
-  },
-  {
-    id: 'vid-2',
-    title: 'Cerimónia de Apresentação de Cartas Credenciais',
-    category: 'Institucional',
-    duration: '08:45',
-    date: '2026',
-    views: '2.1mil visualizações',
-    description: 'Registo oficial da acreditação diplomática da Embaixada de Angola no Reino de Espanha.',
-    image: credenciaisBalbinaImg
-  },
-  {
-    id: 'vid-3',
-    title: 'Conferência: O Contributo da Mulher na Diáspora e em Angola',
-    category: 'Cultura',
-    duration: '22:10',
-    date: '2026',
-    views: '1.8mil visualizações',
-    description: 'Painel comemorativo do Dia da Mulher Africana realizado em Madrid, abordando liderança, cultura e desenvolvimento.',
-    image: diaMulherAfricanaImg
-  },
-  {
-    id: 'vid-4',
-    title: 'Fórum Económico: Oportunidades de Investimento e Recursos Minerais',
-    category: 'Economia',
-    duration: '35:00',
-    date: '2026',
-    views: '4.2mil visualizações',
-    description: 'Debate executivo sobre transição energética, mineração sustentável e parcerias empresariais Angola-Espanha.',
-    image: forumRecursosMineraisImg
-  },
-  {
-    id: 'vid-5',
-    title: 'Selo Oficial Mosaico: Identidade e Difusão',
-    category: 'Institucional',
-    duration: '03:15',
-    date: '2026',
-    views: '950 visualizações',
-    description: 'Apresentação institucional da plataforma digital e revista oficial da Embaixada de Angola.',
-    image: iconMosaicoSquareImg
-  },
-  {
-    id: 'vid-6',
-    title: 'Missão Empresarial IMEX Barcelona: Negócios e Parcerias',
-    category: 'Economia',
-    duration: '18:50',
-    date: '2026',
-    views: '2.9mil visualizações',
-    description: 'Destaques da participação de Angola na feira IMEX em Barcelona, promovendo o ecossistema empresarial nacional.',
-    image: imexBarcelonaImg
-  },
-  {
-    id: 'vid-7',
-    title: 'Cinquentenário da Independência Nacional em Madrid',
-    category: 'Cultura',
-    duration: '45:30',
-    date: '2026',
-    views: '6.7mil visualizações',
-    description: 'Celebrações solenes, concertos e mostras históricas marcando os 50 anos da independência da República de Angola.',
-    image: independencia50Img
-  },
-  {
-    id: 'vid-8',
-    title: 'Documentário: A Trajetória da Revista Mosaico',
-    category: 'Institucional',
-    duration: '12:00',
-    date: '2026',
-    views: '1.5mil visualizações',
-    description: 'Como a plataforma de difusão diplomática conecta cidadãos, autoridades e investidores na Europa e em Angola.',
-    image: logoMosaicoImg
-  },
-  {
-    id: 'vid-9',
-    title: 'Encontro de Alto Nível na Sede da ONU Turismo (Madrid)',
-    category: 'Diplomacia',
-    duration: '15:40',
-    date: '2026',
-    views: '3.1mil visualizações',
-    description: 'Estratégias conjuntas para o fomento do turismo sustentável e projeção internacional de Angola.',
-    image: onuTurismoImg
-  },
-  {
-    id: 'vid-10',
-    title: 'Intercâmbio Cultural e Institucional na Catalunha',
-    category: 'Turismo & Cultura',
-    duration: '16:20',
-    date: '2026',
-    views: '2.4mil visualizações',
-    description: 'Registo da visita institucional à Catalunha, estreitando laços culturais entre Angola, Espanha e Andorra.',
-    image: vityNsalambiImg
-  }
-];
+import { VideoItem } from '../../types';
+import { initialVideoItems } from '../../data/videosData';
 
 interface VideosPageProps {
+  items?: VideoItem[];
   onShowToast: (msg: string) => void;
 }
 
-export const VideosPage: React.FC<VideosPageProps> = ({ onShowToast }) => {
+export const VideosPage: React.FC<VideosPageProps> = ({ items = initialVideoItems, onShowToast }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('todos');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeVideo, setActiveVideo] = useState<VideoItem | null>(null);
@@ -150,7 +16,7 @@ export const VideosPage: React.FC<VideosPageProps> = ({ onShowToast }) => {
 
   const categories = ['todos', 'Diplomacia', 'Institucional', 'Cultura', 'Cultura & Moda', 'Economia', 'Turismo & Cultura'];
 
-  const filteredVideos = videoItems.filter((item) => {
+  const filteredVideos = items.filter((item) => {
     const matchesCategory = selectedCategory === 'todos' || item.category === selectedCategory;
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           item.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -172,7 +38,7 @@ export const VideosPage: React.FC<VideosPageProps> = ({ onShowToast }) => {
         </div>
         <div className="bg-red-50 border border-red-200 px-4 py-2 rounded-full font-semibold text-xs text-[#d9251d] flex items-center gap-2 shrink-0">
           <Sparkles className="w-4 h-4" />
-          <span>{videoItems.length} Vídeos Disponíveis</span>
+          <span>{items.length} Vídeos Disponíveis</span>
         </div>
       </div>
 

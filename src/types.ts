@@ -72,7 +72,31 @@ export interface Article {
   comments?: Comment[];
   isFeatured?: boolean;
   isCarousel?: boolean;
+  isPublished?: boolean;
   tags: string[];
+}
+
+export interface GalleryItem {
+  id: string;
+  title: string;
+  category: string;
+  date: string;
+  description: string;
+  image: string;
+  isPublished?: boolean;
+}
+
+export interface VideoItem {
+  id: string;
+  title: string;
+  category: string;
+  duration: string;
+  date: string;
+  views?: string;
+  description: string;
+  image: string;
+  videoUrl?: string;
+  isPublished?: boolean;
 }
 
 export interface MagazineEdition {
