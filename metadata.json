@@ -1,0 +1,6 @@
+{
+  "name": "MOSAICO",
+  "description": "Revista da Embaixada da República de Angola no Reino de Espanha e Principado de Andorra com notícias diplomáticas, consulares, culturais e turísticas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
