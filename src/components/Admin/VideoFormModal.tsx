@@ -23,7 +23,7 @@ const VIDEO_CATEGORIES = [
 interface VideoFormModalProps {
   initialItem: VideoItem | null;
   onClose: () => void;
-  onSave: (id: string | null, input: VideoInput, isPublished: boolean) => Promise<void>;
+  onSave: (id: string | null, input: VideoInput) => Promise<void>;
 }
 
 export const VideoFormModal: React.FC<VideoFormModalProps> = ({
@@ -82,7 +82,7 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
 
     setSaving(true);
     try {
-      await onSave(initialItem?.id || null, input, isPublished);
+      await onSave(initialItem?.id || null, input);
     } catch (err) {
       setError('Não foi possível guardar o vídeo. Tente novamente.');
       console.error(err);

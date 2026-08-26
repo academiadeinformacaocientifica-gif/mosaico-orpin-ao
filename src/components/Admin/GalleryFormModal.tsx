@@ -21,7 +21,7 @@ const GALLERY_CATEGORIES = [
 interface GalleryFormModalProps {
   initialItem: GalleryItem | null;
   onClose: () => void;
-  onSave: (id: string | null, input: GalleryInput, isPublished: boolean) => Promise<void>;
+  onSave: (id: string | null, input: GalleryInput) => Promise<void>;
 }
 
 export const GalleryFormModal: React.FC<GalleryFormModalProps> = ({
@@ -76,7 +76,7 @@ export const GalleryFormModal: React.FC<GalleryFormModalProps> = ({
 
     setSaving(true);
     try {
-      await onSave(initialItem?.id || null, input, isPublished);
+      await onSave(initialItem?.id || null, input);
     } catch (err) {
       setError('Não foi possível guardar a imagem na galeria. Tente novamente.');
       console.error(err);
