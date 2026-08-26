@@ -92,21 +92,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Articles CRUD Handlers
   const handleSaveArticle = async (id: string | null, input: ArticleInput) => {
-    try {
-      if (id) {
-        await updateArticle(id, input);
-        onShowToast(input.isPublished ? 'Notícia publicada com sucesso.' : 'Rascunho guardado com sucesso.');
-      } else {
-        await createArticle(input);
-        onShowToast(input.isPublished ? 'Notícia publicada com sucesso!' : 'Rascunho guardado com sucesso!');
-      }
-      setArticleFormOpen(false);
-      setEditingArticle(null);
-      onArticlesChanged();
-    } catch (err) {
-      console.error('Erro ao guardar notícia:', err);
-      onShowToast('Erro ao guardar notícia.');
+    if (id) {
+      await updateArticle(id, input);
+      onShowToast(input.isPublished ? 'Notícia publicada com sucesso.' : 'Rascunho guardado com sucesso.');
+    } else {
+      await createArticle(input);
+      onShowToast(input.isPublished ? 'Notícia publicada com sucesso!' : 'Rascunho guardado com sucesso!');
     }
+    setArticleFormOpen(false);
+    setEditingArticle(null);
+    onArticlesChanged();
   };
 
   const handleToggleArticlePublish = async (article: Article) => {
@@ -141,21 +136,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Gallery CRUD Handlers
   const handleSaveGallery = async (id: string | null, input: GalleryInput) => {
-    try {
-      if (id) {
-        await updateGalleryItem(id, input);
-        onShowToast(input.isPublished ? 'Imagem publicada na galeria.' : 'Rascunho de imagem guardado.');
-      } else {
-        await createGalleryItem(input);
-        onShowToast(input.isPublished ? 'Nova imagem publicada na galeria!' : 'Rascunho de imagem guardado!');
-      }
-      setGalleryFormOpen(false);
-      setEditingGalleryItem(null);
-      onGalleryChanged();
-    } catch (err) {
-      console.error('Erro ao guardar galeria:', err);
-      onShowToast('Erro ao guardar imagem.');
+    if (id) {
+      await updateGalleryItem(id, input);
+      onShowToast(input.isPublished ? 'Imagem publicada na galeria.' : 'Rascunho de imagem guardado.');
+    } else {
+      await createGalleryItem(input);
+      onShowToast(input.isPublished ? 'Nova imagem publicada na galeria!' : 'Rascunho de imagem guardado!');
     }
+    setGalleryFormOpen(false);
+    setEditingGalleryItem(null);
+    onGalleryChanged();
   };
 
   const handleToggleGalleryPublish = async (item: GalleryItem) => {
@@ -189,22 +179,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   // Video CRUD Handlers
+  // Video CRUD Handlers
   const handleSaveVideo = async (id: string | null, input: VideoInput) => {
-    try {
-      if (id) {
-        await updateVideoItem(id, input);
-        onShowToast(input.isPublished ? 'Vídeo publicado com sucesso.' : 'Rascunho de vídeo guardado.');
-      } else {
-        await createVideoItem(input);
-        onShowToast(input.isPublished ? 'Novo vídeo publicado com sucesso!' : 'Rascunho de vídeo guardado!');
-      }
-      setVideoFormOpen(false);
-      setEditingVideoItem(null);
-      onVideosChanged();
-    } catch (err) {
-      console.error('Erro ao guardar vídeo:', err);
-      onShowToast('Erro ao guardar vídeo.');
+    if (id) {
+      await updateVideoItem(id, input);
+      onShowToast(input.isPublished ? 'Vídeo publicado com sucesso.' : 'Rascunho de vídeo guardado.');
+    } else {
+      await createVideoItem(input);
+      onShowToast(input.isPublished ? 'Novo vídeo publicado com sucesso!' : 'Rascunho de vídeo guardado!');
     }
+    setVideoFormOpen(false);
+    setEditingVideoItem(null);
+    onVideosChanged();
   };
 
   const handleToggleVideoPublish = async (item: VideoItem) => {
