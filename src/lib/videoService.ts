@@ -120,11 +120,22 @@ export async function createVideoItem(input: VideoInput): Promise<VideoItem> {
   if (isSupabaseConfigured) {
     try {
       const row = videoItemToRow(input);
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('video_items')
         .insert(row)
         .select()
         .single();
+
+      if (error && (error.code === 'PGRST204' || error.message?.includes('is_published'))) {
+        const { is_published: _p, ...rowWithoutPublished } = row as any;
+        const retryResult = await supabase
+          .from('video_items')
+          .insert(rowWithoutPublished)
+          .select()
+          .single();
+        data = retryResult.data;
+        error = retryResult.error;
+      }
 
       if (!error && data) {
         const item = rowToVideoItem(data as VideoRow);
@@ -163,12 +174,25 @@ export async function updateVideoItem(id: string, input: VideoInput): Promise<Vi
   if (isSupabaseConfigured) {
     try {
       const row = videoItemToRow(input);
-      const { data, error } = await supabase
+      const updatePayload: any = { ...row, updated_at: new Date().toISOString() };
+      let { data, error } = await supabase
         .from('video_items')
-        .update({ ...row, updated_at: new Date().toISOString() })
+        .update(updatePayload)
         .eq('id', id)
         .select()
         .single();
+
+      if (error && (error.code === 'PGRST204' || error.message?.includes('is_published'))) {
+        const { is_published: _p, ...payloadWithoutPublished } = updatePayload;
+        const retryResult = await supabase
+          .from('video_items')
+          .update(payloadWithoutPublished)
+          .eq('id', id)
+          .select()
+          .single();
+        data = retryResult.data;
+        error = retryResult.error;
+      }
 
       if (!error && data) {
         const updatedItem = rowToVideoItem(data as VideoRow);

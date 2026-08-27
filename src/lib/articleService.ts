@@ -141,11 +141,23 @@ export async function createArticle(article: ArticleInput): Promise<Article> {
   }
   const row = articleToRow(article);
   try {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('articles')
       .insert(row)
       .select()
       .single();
+
+    // If is_published column does not exist in user's schema, retry without it
+    if (error && (error.code === 'PGRST204' || error.message?.includes('is_published'))) {
+      const { is_published: _p, ...rowWithoutPublished } = row as any;
+      const retryResult = await supabase
+        .from('articles')
+        .insert(rowWithoutPublished)
+        .select()
+        .single();
+      data = retryResult.data;
+      error = retryResult.error;
+    }
 
     if (error) {
       if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
@@ -168,12 +180,26 @@ export async function updateArticle(id: string, article: ArticleInput): Promise<
   }
   const row = articleToRow(article);
   try {
-    const { data, error } = await supabase
+    const updatePayload: any = { ...row, updated_at: new Date().toISOString() };
+    let { data, error } = await supabase
       .from('articles')
-      .update({ ...row, updated_at: new Date().toISOString() })
+      .update(updatePayload)
       .eq('id', id)
       .select()
       .single();
+
+    // If is_published column does not exist in user's schema, retry without it
+    if (error && (error.code === 'PGRST204' || error.message?.includes('is_published'))) {
+      const { is_published: _p, ...payloadWithoutPublished } = updatePayload;
+      const retryResult = await supabase
+        .from('articles')
+        .update(payloadWithoutPublished)
+        .eq('id', id)
+        .select()
+        .single();
+      data = retryResult.data;
+      error = retryResult.error;
+    }
 
     if (error) {
       if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {

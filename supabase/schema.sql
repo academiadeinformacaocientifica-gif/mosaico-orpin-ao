@@ -47,6 +47,9 @@ create table if not exists public.articles (
   updated_at     timestamptz not null default now()
 );
 
+-- Garantir coluna is_published em tabelas existentes
+alter table public.articles add column if not exists is_published boolean not null default true;
+
 create index if not exists articles_iso_date_idx on public.articles (iso_date desc);
 create index if not exists articles_category_id_idx on public.articles (category_id);
 
@@ -134,6 +137,7 @@ create table if not exists public.gallery_items (
   updated_at     timestamptz not null default now()
 );
 
+alter table public.gallery_items add column if not exists is_published boolean not null default true;
 alter table public.gallery_items enable row level security;
 
 drop policy if exists "Leitura pública de galeria" on public.gallery_items;
@@ -173,6 +177,7 @@ create table if not exists public.video_items (
   updated_at     timestamptz not null default now()
 );
 
+alter table public.video_items add column if not exists is_published boolean not null default true;
 alter table public.video_items enable row level security;
 
 drop policy if exists "Leitura pública de vídeos" on public.video_items;

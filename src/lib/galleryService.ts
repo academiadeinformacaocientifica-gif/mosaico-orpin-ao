@@ -110,11 +110,22 @@ export async function createGalleryItem(input: GalleryInput): Promise<GalleryIte
   if (isSupabaseConfigured) {
     try {
       const row = galleryItemToRow(input);
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('gallery_items')
         .insert(row)
         .select()
         .single();
+
+      if (error && (error.code === 'PGRST204' || error.message?.includes('is_published'))) {
+        const { is_published: _p, ...rowWithoutPublished } = row as any;
+        const retryResult = await supabase
+          .from('gallery_items')
+          .insert(rowWithoutPublished)
+          .select()
+          .single();
+        data = retryResult.data;
+        error = retryResult.error;
+      }
 
       if (!error && data) {
         const item = rowToGalleryItem(data as GalleryRow);
@@ -151,12 +162,25 @@ export async function updateGalleryItem(id: string, input: GalleryInput): Promis
   if (isSupabaseConfigured) {
     try {
       const row = galleryItemToRow(input);
-      const { data, error } = await supabase
+      const updatePayload: any = { ...row, updated_at: new Date().toISOString() };
+      let { data, error } = await supabase
         .from('gallery_items')
-        .update({ ...row, updated_at: new Date().toISOString() })
+        .update(updatePayload)
         .eq('id', id)
         .select()
         .single();
+
+      if (error && (error.code === 'PGRST204' || error.message?.includes('is_published'))) {
+        const { is_published: _p, ...payloadWithoutPublished } = updatePayload;
+        const retryResult = await supabase
+          .from('gallery_items')
+          .update(payloadWithoutPublished)
+          .eq('id', id)
+          .select()
+          .single();
+        data = retryResult.data;
+        error = retryResult.error;
+      }
 
       if (!error && data) {
         const updatedItem = rowToGalleryItem(data as GalleryRow);
