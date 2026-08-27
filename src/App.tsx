@@ -49,15 +49,22 @@ export default function App() {
   const [articlesError, setArticlesError] = useState<string | null>(null);
 
   const loadArticlesFromBackend = useCallback(async () => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured) {
+      setArticlesLoading(false);
+      return;
+    }
     setArticlesLoading(true);
     setArticlesError(null);
     try {
       const fromDb = await fetchArticles();
-      setArticles(fromDb.length > 0 ? fromDb : initialArticles);
+      if (fromDb && fromDb.length > 0) {
+        setArticles(fromDb);
+      } else {
+        setArticles(initialArticles);
+      }
     } catch (err) {
-      console.error(err);
-      setArticlesError('Não foi possível carregar as notícias a partir do servidor.');
+      console.warn('[Mosaico Angolano] Erro ao carregar notícias do servidor, a utilizar catálogo padrão:', err);
+      setArticles(initialArticles);
     } finally {
       setArticlesLoading(false);
     }

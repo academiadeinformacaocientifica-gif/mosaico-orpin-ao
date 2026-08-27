@@ -113,58 +113,101 @@ export function slugify(title: string): string {
 
 export async function fetchArticles(): Promise<Article[]> {
   if (!isSupabaseConfigured) return [];
-  const { data, error } = await supabase
-    .from('articles')
-    .select('*')
-    .order('iso_date', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('articles')
+      .select('*')
+      .order('iso_date', { ascending: false });
 
-  if (error) {
-    if (error.code === 'PGRST205' || error.message?.includes('relation "public.articles" does not exist')) {
-      console.warn('[Mosaico Angolano] Tabela "articles" não encontrada no Supabase.');
+    if (error) {
+      if (error.code === 'PGRST205' || error.message?.includes('relation "public.articles" does not exist') || error.message?.includes('does not exist')) {
+        console.warn('[Mosaico Angolano] Tabela "articles" não encontrada no Supabase. A utilizar catálogo de artigos editorial.');
+        return [];
+      }
+      console.warn('[Mosaico Angolano] Erro ao obter artigos do Supabase:', error.message || error);
       return [];
     }
-    throw error;
+    if (!data || !Array.isArray(data)) return [];
+    return (data as ArticleRow[]).map(rowToArticle);
+  } catch (err) {
+    console.warn('[Mosaico Angolano] Não foi possível ligar ao Supabase (modo offline/demonstração ativado):', err);
+    return [];
   }
-  return (data as ArticleRow[]).map(rowToArticle);
 }
 
 export async function createArticle(article: ArticleInput): Promise<Article> {
   if (!isSupabaseConfigured) {
-    throw new Error('Supabase não configurado. Impossível gravar na base de dados.');
+    throw new Error('Supabase não configurado. Defina as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no ficheiro .env.');
   }
   const row = articleToRow(article);
-  const { data, error } = await supabase
-    .from('articles')
-    .insert(row)
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('articles')
+      .insert(row)
+      .select()
+      .single();
 
-  if (error) throw error;
-  return rowToArticle(data as ArticleRow);
+    if (error) {
+      if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+        throw new Error('Não foi possível estabelecer ligação ao servidor do Supabase. Verifique a rede.');
+      }
+      throw error;
+    }
+    return rowToArticle(data as ArticleRow);
+  } catch (err: any) {
+    if (err?.message?.includes('Failed to fetch') || err?.name === 'TypeError') {
+      throw new Error('Falha de ligação à base de dados. Verifique a configuração do Supabase.');
+    }
+    throw err;
+  }
 }
 
 export async function updateArticle(id: string, article: ArticleInput): Promise<Article> {
   if (!isSupabaseConfigured) {
-    throw new Error('Supabase não configurado. Impossível atualizar na base de dados.');
+    throw new Error('Supabase não configurado. Defina as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.');
   }
   const row = articleToRow(article);
-  const { data, error } = await supabase
-    .from('articles')
-    .update({ ...row, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('articles')
+      .update({ ...row, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
 
-  if (error) throw error;
-  return rowToArticle(data as ArticleRow);
+    if (error) {
+      if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+        throw new Error('Não foi possível estabelecer ligação ao servidor do Supabase. Verifique a rede.');
+      }
+      throw error;
+    }
+    return rowToArticle(data as ArticleRow);
+  } catch (err: any) {
+    if (err?.message?.includes('Failed to fetch') || err?.name === 'TypeError') {
+      throw new Error('Falha de ligação à base de dados. Verifique a configuração do Supabase.');
+    }
+    throw err;
+  }
 }
 
 export async function deleteArticle(id: string): Promise<void> {
   if (!isSupabaseConfigured) {
     throw new Error('Supabase não configurado. Impossível eliminar da base de dados.');
   }
-  const { error } = await supabase.from('articles').delete().eq('id', id);
-  if (error) throw error;
+  try {
+    const { error } = await supabase.from('articles').delete().eq('id', id);
+    if (error) {
+      if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+        throw new Error('Não foi possível estabelecer ligação ao servidor do Supabase.');
+      }
+      throw error;
+    }
+  } catch (err: any) {
+    if (err?.message?.includes('Failed to fetch') || err?.name === 'TypeError') {
+      throw new Error('Falha de ligação à base de dados. Verifique a configuração do Supabase.');
+    }
+    throw err;
+  }
 }
 
 export async function uploadArticleImage(file: File): Promise<string> {
@@ -174,18 +217,25 @@ export async function uploadArticleImage(file: File): Promise<string> {
   const ext = file.name.split('.').pop() || 'jpg';
   const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
-  const { error } = await supabase.storage
-    .from('article-images')
-    .upload(path, file, { cacheControl: '3600', upsert: false });
+  try {
+    const { error } = await supabase.storage
+      .from('article-images')
+      .upload(path, file, { cacheControl: '3600', upsert: false });
 
-  if (error) {
-    if (error.message?.includes('Bucket not found') || error.message?.includes('not found') || error.message?.includes('does not exist')) {
-      throw new Error('O bucket "article-images" não foi encontrado no Supabase Storage. Crie um bucket público com esse nome no painel do Supabase.');
+    if (error) {
+      if (error.message?.includes('Bucket not found') || error.message?.includes('not found') || error.message?.includes('does not exist')) {
+        throw new Error('O bucket "article-images" não foi encontrado no Supabase Storage. Crie um bucket público com esse nome no painel do Supabase.');
+      }
+      throw error;
     }
-    throw error;
-  }
 
-  const { data } = supabase.storage.from('article-images').getPublicUrl(path);
-  return data.publicUrl;
+    const { data } = supabase.storage.from('article-images').getPublicUrl(path);
+    return data.publicUrl;
+  } catch (err: any) {
+    if (err?.message?.includes('Failed to fetch') || err?.name === 'TypeError') {
+      throw new Error('Falha de ligação ao armazenamento de ficheiros do Supabase.');
+    }
+    throw err;
+  }
 }
 

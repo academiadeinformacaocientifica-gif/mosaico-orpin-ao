@@ -97,6 +97,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem(STORAGE_KEY, JSON.stringify(loggedUser));
       return { error: null };
     } catch (err: any) {
+      if (err?.message?.includes('Failed to fetch') || err?.name === 'TypeError') {
+        return { error: 'Não foi possível estabelecer ligação ao servidor da base de dados. Verifique a ligação à rede.' };
+      }
       return { error: err.message || 'Ocorreu um erro ao tentar iniciar sessão.' };
     }
   };
@@ -127,6 +130,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
 
       if (checkError && !checkError.message?.includes('does not exist')) {
+        if (checkError.message?.includes('Failed to fetch')) {
+          return { error: 'Não foi possível ligar ao servidor da base de dados. Verifique a rede.' };
+        }
         return { error: `Erro de verificação: ${checkError.message}` };
       }
 
@@ -156,6 +162,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             error: 'A tabela "admin_users" ainda não foi criada no Supabase. Execute o script supabase/schema.sql no SQL Editor do Supabase.',
           };
         }
+        if (insertError.message?.includes('Failed to fetch')) {
+          return { error: 'Não foi possível ligar ao servidor da base de dados.' };
+        }
         return { error: `Erro ao criar perfil: ${insertError.message}` };
       }
 
@@ -172,6 +181,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem(STORAGE_KEY, JSON.stringify(createdUser));
       return { error: null };
     } catch (err: any) {
+      if (err?.message?.includes('Failed to fetch') || err?.name === 'TypeError') {
+        return { error: 'Não foi possível estabelecer ligação ao servidor do Supabase. Verifique a rede.' };
+      }
       return { error: err.message || 'Ocorreu um erro ao registar o perfil.' };
     }
   };
