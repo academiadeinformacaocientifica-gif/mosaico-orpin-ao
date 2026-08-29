@@ -11,13 +11,9 @@ import {
   ThumbsUp,
   MessageSquare
 } from 'lucide-react';
-import { Article, MagazineEdition, DiplomaticEvent, NavPage } from '../../types';
+import { Article, MagazineEdition, DiplomaticEvent, NavPage, GalleryItem } from '../../types';
 import { HeroCarousel } from '../HeroCarousel';
 import { ArticleCard } from '../ArticleCard';
-import cooperacaoBilateralImg from '../../assets/images/Angola e Espanha reforçam cooperação bilateral.jpeg';
-import credenciaisBalbinaImg from '../../assets/images/credenciais_balbina_silva_1787483613500.jpg.jpeg';
-import diaMulherAfricanaImg from '../../assets/images/dia_mulher_africana_1787482964722.jpg.jpeg';
-import independencia50Img from '../../assets/images/independencia_50_madrid_1787496814208.jpg.jpeg';
 
 interface HomePageProps {
   carouselArticles: Article[];
@@ -25,6 +21,7 @@ interface HomePageProps {
   latestArticles: Article[];
   magazineEditions: MagazineEdition[];
   upcomingEvents: DiplomaticEvent[];
+  galleryItems?: GalleryItem[];
   onOpenArticle: (article: Article) => void;
   onOpenEdition: (edition: MagazineEdition) => void;
   onToggleBookmark: (articleId: string) => void;
@@ -40,6 +37,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   latestArticles,
   magazineEditions,
   upcomingEvents,
+  galleryItems = [],
   onOpenArticle,
   onOpenEdition,
   onToggleBookmark,
@@ -48,6 +46,8 @@ export const HomePage: React.FC<HomePageProps> = ({
   likedIds,
   onNavigate,
 }) => {
+  // Regra: Sempre apenas as 4 imagens mais recentes publicadas
+  const featuredImages = galleryItems.slice(0, 4);
   return (
     <div className="space-y-10 animate-in fade-in duration-300">
       
@@ -253,58 +253,47 @@ export const HomePage: React.FC<HomePageProps> = ({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          {/* Quick preview of project images */}
-          {[
-            {
-              title: 'Cooperação Bilateral Angola-Espanha',
-              category: 'Diplomacia',
-              image: cooperacaoBilateralImg
-            },
-            {
-              title: 'Apresentação de Cartas Credenciais',
-              category: 'Institucional',
-              image: credenciaisBalbinaImg
-            },
-            {
-              title: 'Celebração do Dia da Mulher Africana',
-              category: 'Cultura',
-              image: diaMulherAfricanaImg
-            },
-            {
-              title: '50 Anos da Independência em Madrid',
-              category: 'Cultura',
-              image: independencia50Img
-            }
-          ].map((item, idx) => (
-            <div
-              key={idx}
-              onClick={() => onNavigate('galeria')}
-              className="bg-white rounded-xl border border-gray-200/80 overflow-hidden shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col"
-            >
-              <div className="h-36 overflow-hidden relative">
-                <img
-                  src={item.image}
-                  alt={item.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  referrerPolicy="no-referrer"
-                />
-                <span className="absolute top-2 left-2 bg-black/60 backdrop-blur-xs text-white text-[9px] font-bold uppercase px-2 py-0.5 rounded">
-                  {item.category}
-                </span>
+        {featuredImages.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            {featuredImages.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => onNavigate('galeria')}
+                className="bg-white rounded-xl border border-gray-200/80 overflow-hidden shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col"
+              >
+                <div className="h-36 overflow-hidden relative bg-gray-100">
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    referrerPolicy="no-referrer"
+                  />
+                  <span className="absolute top-2 left-2 bg-black/60 backdrop-blur-xs text-white text-[9px] font-bold uppercase px-2 py-0.5 rounded">
+                    {item.category}
+                  </span>
+                  {item.date && (
+                    <span className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-xs text-white text-[9px] font-medium px-1.5 py-0.5 rounded">
+                      {item.date}
+                    </span>
+                  )}
+                </div>
+                <div className="p-3 flex-1 flex flex-col justify-between">
+                  <h3 className="text-xs font-bold text-gray-900 line-clamp-2 mb-1 group-hover:text-[#d9251d] transition-colors">
+                    {item.title}
+                  </h3>
+                  <span className="text-[11px] font-medium text-[#d9251d] inline-flex items-center gap-1 mt-1">
+                    <span>Ver Imagem</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </span>
+                </div>
               </div>
-              <div className="p-3 flex-1 flex flex-col justify-between">
-                <h3 className="text-xs font-bold text-gray-900 line-clamp-2 mb-1 group-hover:text-[#d9251d] transition-colors">
-                  {item.title}
-                </h3>
-                <span className="text-[11px] font-medium text-[#d9251d] inline-flex items-center gap-1 mt-1">
-                  <span>Ver Imagem</span>
-                  <ArrowRight className="w-3 h-3" />
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl p-8 text-center border border-gray-200 text-gray-500 text-xs">
+            Nenhuma imagem disponível no momento.
+          </div>
+        )}
       </section>
 
     </div>

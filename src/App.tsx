@@ -514,6 +514,7 @@ export default function App() {
                 latestArticles={latestArticles}
                 magazineEditions={magazineEditions}
                 upcomingEvents={upcomingEvents}
+                galleryItems={publicGalleryItems}
                 onOpenArticle={handleOpenArticle}
                 onOpenEdition={setSelectedEdition}
                 onToggleBookmark={handleToggleBookmark}
