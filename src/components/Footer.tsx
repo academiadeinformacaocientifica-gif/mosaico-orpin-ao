@@ -41,7 +41,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onShowToast }) => {
   };
 
   return (
-    <footer className="bg-[#d9251d] text-white mt-16 pt-12 pb-6">
+    <footer className="bg-[#FF1B1A] text-white mt-16 pt-12 pb-6">
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6">
         {/* FOOTER MAIN GRID */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-10">
