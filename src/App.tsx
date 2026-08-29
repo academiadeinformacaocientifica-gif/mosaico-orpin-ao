@@ -34,8 +34,12 @@ import { isSupabaseConfigured } from './lib/supabase';
 import { Search, X, FolderSearch } from 'lucide-react';
 
 function getInitialPage(): NavPage {
-  if (typeof window !== 'undefined' && window.location.pathname.replace(/\/$/, '') === '/admin') {
-    return 'admin';
+  if (typeof window !== 'undefined') {
+    const path = window.location.pathname.toLowerCase().replace(/\/$/, '');
+    const hash = window.location.hash.toLowerCase().replace(/^#\/?/, '');
+    if (path === '/admin' || hash === 'admin') {
+      return 'admin';
+    }
   }
   return 'home';
 }
@@ -95,15 +99,21 @@ export default function App() {
   }, [loadArticlesFromBackend, loadGalleryFromBackend, loadVideosFromBackend]);
 
   useEffect(() => {
-    const handlePopState = () => {
-      const onAdminPath = window.location.pathname.replace(/\/$/, '') === '/admin';
+    const handleUrlChange = () => {
+      const path = window.location.pathname.toLowerCase().replace(/\/$/, '');
+      const hash = window.location.hash.toLowerCase().replace(/^#\/?/, '');
+      const onAdmin = path === '/admin' || hash === 'admin';
       setCurrentPage((prev) => {
-        if (onAdminPath) return 'admin';
+        if (onAdmin) return 'admin';
         return prev === 'admin' ? 'home' : prev;
       });
     };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('popstate', handleUrlChange);
+    window.addEventListener('hashchange', handleUrlChange);
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('hashchange', handleUrlChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -292,12 +302,23 @@ export default function App() {
   }, [articles]);
 
   const carouselArticles = useMemo(() => {
-    return publicArticles;
+    const featured = publicArticles.filter((a) => Boolean(a.isFeatured || a.isCarousel));
+    return [...featured].sort((a, b) => {
+      const dateA = a.isoDate ? new Date(a.isoDate).getTime() : 0;
+      const dateB = b.isoDate ? new Date(b.isoDate).getTime() : 0;
+      return dateB - dateA;
+    });
   }, [publicArticles]);
   
   const secondaryArticles = useMemo(() => {
-    return publicArticles.slice(1, 3);
-  }, [publicArticles]);
+    const carouselIds = new Set(carouselArticles.map((c) => c.id));
+    const nonCarousel = publicArticles.filter((a) => !carouselIds.has(a.id));
+    if (nonCarousel.length >= 2) {
+      return nonCarousel.slice(0, 2);
+    }
+    // Fallback se houver poucos artigos fora do carrossel
+    return publicArticles.filter((a) => a.id !== carouselArticles[0]?.id).slice(0, 2);
+  }, [publicArticles, carouselArticles]);
 
   const latestArticles = useMemo(() => {
     return [...publicArticles].sort((a, b) => {

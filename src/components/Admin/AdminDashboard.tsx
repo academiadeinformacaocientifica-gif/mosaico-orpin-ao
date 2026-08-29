@@ -191,6 +191,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
+  const handleToggleArticleFeatured = async (article: Article) => {
+    try {
+      const isCurrentlyFeatured = Boolean(article.isFeatured || article.isCarousel);
+      const nextFeatured = !isCurrentlyFeatured;
+      await updateArticle(article.id, {
+        ...article,
+        isFeatured: nextFeatured,
+        isCarousel: nextFeatured,
+      });
+      onShowToast(
+        nextFeatured
+          ? 'Notícia colocada nos destaques (slides) da página principal!'
+          : 'Notícia removida dos destaques da página principal.'
+      );
+      onArticlesChanged();
+    } catch (err) {
+      onShowToast('Erro ao atualizar destaque da notícia.');
+      console.error(err);
+    }
+  };
+
   const handleDeleteArticle = async (id: string) => {
     setDeletingId(id);
     try {
@@ -581,12 +602,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             Rascunho
                           </span>
                         )}
-                        {article.isFeatured && (
-                          <span className="flex items-center gap-0.5 text-[10px] font-bold text-amber-600">
-                            <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                            Destaque
+                        <button
+                          type="button"
+                          onClick={() => handleToggleArticleFeatured(article)}
+                          className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors cursor-pointer ${
+                            article.isFeatured || article.isCarousel
+                              ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300/60'
+                              : 'bg-gray-100 text-gray-400 hover:bg-gray-200 border border-transparent'
+                          }`}
+                          title={
+                            article.isFeatured || article.isCarousel
+                              ? 'Notícia em Destaque nos Slides. Clique para remover do carrossel.'
+                              : 'Notícia não destacada. Clique para colocar nos slides do carrossel.'
+                          }
+                        >
+                          <Star
+                            className={`w-3 h-3 ${
+                              article.isFeatured || article.isCarousel
+                                ? 'fill-amber-500 text-amber-500'
+                                : 'text-gray-400'
+                            }`}
+                          />
+                          <span>
+                            {article.isFeatured || article.isCarousel
+                              ? 'Destaque (Slides)'
+                              : 'Sem Destaque'}
                           </span>
-                        )}
+                        </button>
                       </div>
                       <h3 className="text-sm font-semibold text-[#111] truncate">{article.title}</h3>
                       <p className="text-[11px] text-gray-500">{article.date}</p>

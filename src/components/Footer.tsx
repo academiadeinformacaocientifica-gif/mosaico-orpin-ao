@@ -217,15 +217,8 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onShowToast }) => {
         </div>
 
         {/* COPYRIGHT BOTTOM SECTION INSIDE THE UNIFIED RED FOOTER */}
-        <div className="pt-6 border-t border-white/20 text-center text-xs text-white/90 relative flex flex-col sm:flex-row items-center justify-center gap-2">
+        <div className="pt-6 border-t border-white/20 text-center text-xs text-white/90">
           <p>© {new Date().getFullYear()} Mosaico — Embaixada da República de Angola no Reino de Espanha e Principado de Andorra. Todos os direitos reservados.</p>
-          <button
-            type="button"
-            onClick={() => onNavigate('admin')}
-            className="sm:absolute sm:right-4 text-white/80 hover:text-white underline underline-offset-2 text-[11px] cursor-pointer"
-          >
-            Área Reservada
-          </button>
         </div>
       </div>
     </footer>

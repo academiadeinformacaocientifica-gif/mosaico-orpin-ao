@@ -40,7 +40,7 @@ export const initialArticles: Article[] = [
     likes: 67,
     commentsCount: 11,
     isFeatured: true,
-    isCarousel: false,
+    isCarousel: true,
     tags: ['Cooperação Bilateral', 'Esmeralda Mendonça', 'Diego Martínez Belío', 'Madrid', 'Espanha-Angola', 'Corredor do Lobito', 'FUNIBER', 'Diplomacia'],
     comments: [
       {
@@ -132,7 +132,7 @@ export const initialArticles: Article[] = [
     imageUrl: imexBarcelonaImg,
     likes: 76,
     commentsCount: 15,
-    isFeatured: true,
+    isFeatured: false,
     isCarousel: false,
     tags: ['IMEX Barcelona', 'Aditadoria Comercial', 'Paula Francinette Cordeiro Lisboa', 'Foment del Treball', 'Economia', 'Investimento', 'Península Ibérica', 'Indústria Transformadora'],
     comments: [
@@ -182,7 +182,7 @@ export const initialArticles: Article[] = [
     imageUrl: vityNsalambiImg,
     likes: 95,
     commentsCount: 31,
-    isFeatured: true,
+    isFeatured: false,
     isCarousel: false,
     tags: ['Ordem dos Arquitectos de Angola', 'Vity Claude Nsalambi', 'UIA Barcelona', 'Sagrada Família', 'Prémio Robert Matthew', 'Disseny Hub Barcelona', 'Angolbérica', 'Arquitetura'],
     comments: [
@@ -352,8 +352,8 @@ export const initialArticles: Article[] = [
     imageUrl: forumRecursosMineraisImg,
     likes: 48,
     commentsCount: 9,
-    isFeatured: true,
-    isCarousel: true,
+    isFeatured: false,
+    isCarousel: false,
     tags: ['Recursos Minerais', 'Petróleo e Gás', 'Câmara de Comércio de Madrid', 'Investimento', 'Economia', 'Corredor do Lobito', 'Espanha-Angola'],
     comments: [
       {
@@ -395,7 +395,7 @@ export const initialArticles: Article[] = [
     imageUrl: diaMulherAfricanaImg,
     likes: 52,
     commentsCount: 16,
-    isFeatured: true,
+    isFeatured: false,
     isCarousel: false,
     tags: ['Dia da Mulher Africana', 'Embaixada de Angola', 'Fundação ConÁfrica', 'Empoderamento Feminino', 'Cultura', 'Diplomacia'],
     comments: [

@@ -66,8 +66,9 @@ export const ArticleFormModal: React.FC<ArticleFormModalProps> = ({
   const [readTime, setReadTime] = useState(initialArticle?.readTime || '3 min de leitura');
   const [imageUrl, setImageUrl] = useState(initialArticle?.imageUrl || '');
   const [tags, setTags] = useState((initialArticle?.tags || []).join(', '));
-  const [isFeatured, setIsFeatured] = useState(Boolean(initialArticle?.isFeatured));
-  const [isCarousel, setIsCarousel] = useState(Boolean(initialArticle?.isCarousel));
+  const [isFeatured, setIsFeatured] = useState(
+    Boolean(initialArticle?.isFeatured || initialArticle?.isCarousel)
+  );
 
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -124,7 +125,7 @@ export const ArticleFormModal: React.FC<ArticleFormModalProps> = ({
         .map((t) => t.trim())
         .filter(Boolean),
       isFeatured,
-      isCarousel,
+      isCarousel: isFeatured,
       isPublished,
       likes: initialArticle?.likes,
       commentsCount: initialArticle?.commentsCount,
@@ -318,24 +319,22 @@ export const ArticleFormModal: React.FC<ArticleFormModalProps> = ({
             />
           </div>
 
-          <div className="flex items-center gap-6">
-            <label className="flex items-center gap-2 text-xs font-medium text-[#444] cursor-pointer">
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-3.5">
+            <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={isFeatured}
                 onChange={(e) => setIsFeatured(e.target.checked)}
-                className="accent-[#d9251d] w-4 h-4"
+                className="accent-[#d9251d] w-4 h-4 mt-0.5"
               />
-              Destaque
-            </label>
-            <label className="flex items-center gap-2 text-xs font-medium text-[#444] cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isCarousel}
-                onChange={(e) => setIsCarousel(e.target.checked)}
-                className="accent-[#d9251d] w-4 h-4"
-              />
-              Mostrar no carrossel principal
+              <div>
+                <span className="block text-xs font-bold text-gray-900">
+                  Destaque na Página Principal (Slides)
+                </span>
+                <span className="block text-[11px] text-gray-500 mt-0.5">
+                  Se ativado, esta notícia será apresentada nos slides do carrossel principal no topo da página inicial. Se desativado, aparecerá apenas na secção de notícias gerais e na sua categoria.
+                </span>
+              </div>
             </label>
           </div>
 
