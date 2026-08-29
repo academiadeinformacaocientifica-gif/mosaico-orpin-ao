@@ -238,7 +238,12 @@ export async function deleteArticle(id: string): Promise<void> {
 
 export async function uploadArticleImage(file: File): Promise<string> {
   if (!isSupabaseConfigured) {
-    throw new Error('Supabase não configurado. Impossível carregar imagem.');
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (e) => reject(e);
+      reader.readAsDataURL(file);
+    });
   }
   const ext = file.name.split('.').pop() || 'jpg';
   const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
@@ -249,8 +254,18 @@ export async function uploadArticleImage(file: File): Promise<string> {
       .upload(path, file, { cacheControl: '3600', upsert: false });
 
     if (error) {
-      if (error.message?.includes('Bucket not found') || error.message?.includes('not found') || error.message?.includes('does not exist')) {
-        throw new Error('O bucket "article-images" não foi encontrado no Supabase Storage. Crie um bucket público com esse nome no painel do Supabase.');
+      if (
+        error.message?.includes('Bucket not found') ||
+        error.message?.includes('not found') ||
+        error.message?.includes('does not exist')
+      ) {
+        // Fallback to local Data URL if bucket does not exist
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = (e) => reject(e);
+          reader.readAsDataURL(file);
+        });
       }
       throw error;
     }
@@ -259,7 +274,12 @@ export async function uploadArticleImage(file: File): Promise<string> {
     return data.publicUrl;
   } catch (err: any) {
     if (err?.message?.includes('Failed to fetch') || err?.name === 'TypeError') {
-      throw new Error('Falha de ligação ao armazenamento de ficheiros do Supabase.');
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = (e) => reject(e);
+        reader.readAsDataURL(file);
+      });
     }
     throw err;
   }

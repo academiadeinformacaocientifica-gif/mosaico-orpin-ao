@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Plus,
   Pencil,
@@ -17,6 +17,10 @@ import {
   Video as VideoIcon,
   Layers,
   Play,
+  Search,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
 } from 'lucide-react';
 import { Article, GalleryItem, VideoItem } from '../../types';
 import { useAuth } from '../../lib/AuthContext';
@@ -38,6 +42,7 @@ import { GalleryFormModal } from './GalleryFormModal';
 import { VideoFormModal } from './VideoFormModal';
 
 type AdminTab = 'noticias' | 'galeria' | 'videos';
+type StatusFilter = 'todos' | 'publicados' | 'rascunhos';
 
 interface AdminDashboardProps {
   articles: Article[];
@@ -67,6 +72,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<AdminTab>('noticias');
 
+  // Search & Status filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
+
   // Article State
   const [articleFormOpen, setArticleFormOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
@@ -83,12 +92,75 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  // Sorted list of articles
-  const sortedArticles = [...articles].sort((a, b) => {
-    const da = a.isoDate ? new Date(a.isoDate).getTime() : 0;
-    const db = b.isoDate ? new Date(b.isoDate).getTime() : 0;
-    return db - da;
-  });
+  // Sorted & Filtered Articles
+  const filteredArticles = useMemo(() => {
+    return [...articles]
+      .sort((a, b) => {
+        const da = a.isoDate ? new Date(a.isoDate).getTime() : 0;
+        const db = b.isoDate ? new Date(b.isoDate).getTime() : 0;
+        return db - da;
+      })
+      .filter((art) => {
+        if (statusFilter === 'publicados' && art.isPublished === false) return false;
+        if (statusFilter === 'rascunhos' && art.isPublished !== false) return false;
+        if (!searchQuery.trim()) return true;
+        const q = searchQuery.toLowerCase();
+        return (
+          art.title.toLowerCase().includes(q) ||
+          art.category.toLowerCase().includes(q) ||
+          art.description.toLowerCase().includes(q)
+        );
+      });
+  }, [articles, searchQuery, statusFilter]);
+
+  // Filtered Gallery Items
+  const filteredGalleryItems = useMemo(() => {
+    return [...galleryItems].filter((item) => {
+      if (statusFilter === 'publicados' && item.isPublished === false) return false;
+      if (statusFilter === 'rascunhos' && item.isPublished !== false) return false;
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        item.title.toLowerCase().includes(q) ||
+        item.category.toLowerCase().includes(q) ||
+        item.description.toLowerCase().includes(q)
+      );
+    });
+  }, [galleryItems, searchQuery, statusFilter]);
+
+  // Filtered Video Items
+  const filteredVideoItems = useMemo(() => {
+    return [...videoItems].filter((item) => {
+      if (statusFilter === 'publicados' && item.isPublished === false) return false;
+      if (statusFilter === 'rascunhos' && item.isPublished !== false) return false;
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        item.title.toLowerCase().includes(q) ||
+        item.category.toLowerCase().includes(q) ||
+        item.description.toLowerCase().includes(q)
+      );
+    });
+  }, [videoItems, searchQuery, statusFilter]);
+
+  // Stats Counters
+  const articleStats = useMemo(() => {
+    const published = articles.filter((a) => a.isPublished !== false).length;
+    const drafts = articles.length - published;
+    return { total: articles.length, published, drafts };
+  }, [articles]);
+
+  const galleryStats = useMemo(() => {
+    const published = galleryItems.filter((i) => i.isPublished !== false).length;
+    const drafts = galleryItems.length - published;
+    return { total: galleryItems.length, published, drafts };
+  }, [galleryItems]);
+
+  const videoStats = useMemo(() => {
+    const published = videoItems.filter((v) => v.isPublished !== false).length;
+    const drafts = videoItems.length - published;
+    return { total: videoItems.length, published, drafts };
+  }, [videoItems]);
 
   // Articles CRUD Handlers
   const handleSaveArticle = async (id: string | null, input: ArticleInput) => {
@@ -123,7 +195,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setDeletingId(id);
     try {
       await deleteArticle(id);
-      onShowToast('Notícia removida.');
+      onShowToast('Notícia removida com sucesso.');
       onArticlesChanged();
     } catch (err) {
       onShowToast('Não foi possível remover a notícia.');
@@ -138,7 +210,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleSaveGallery = async (id: string | null, input: GalleryInput) => {
     if (id) {
       await updateGalleryItem(id, input);
-      onShowToast(input.isPublished ? 'Imagem publicada na galeria.' : 'Rascunho de imagem guardado.');
+      onShowToast(input.isPublished ? 'Imagem atualizada e publicada na galeria.' : 'Rascunho de imagem guardado.');
     } else {
       await createGalleryItem(input);
       onShowToast(input.isPublished ? 'Nova imagem publicada na galeria!' : 'Rascunho de imagem guardado!');
@@ -155,10 +227,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         ...item,
         isPublished: nextPublished,
       });
-      onShowToast(nextPublished ? 'Imagem publicada com sucesso!' : 'Imagem colocada em rascunho.');
+      onShowToast(nextPublished ? 'Imagem publicada com sucesso na galeria!' : 'Imagem colocada em rascunho.');
       onGalleryChanged();
     } catch (err) {
-      onShowToast('Erro ao atualizar estado.');
+      onShowToast('Erro ao atualizar estado da imagem.');
       console.error(err);
     }
   };
@@ -167,10 +239,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setDeletingId(id);
     try {
       await deleteGalleryItem(id);
-      onShowToast('Imagem removida da galeria.');
+      onShowToast('Imagem removida da galeria com sucesso.');
       onGalleryChanged();
     } catch (err) {
-      onShowToast('Não foi possível remover o item.');
+      onShowToast('Não foi possível remover o registo da galeria.');
       console.error(err);
     } finally {
       setDeletingId(null);
@@ -179,11 +251,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   // Video CRUD Handlers
-  // Video CRUD Handlers
   const handleSaveVideo = async (id: string | null, input: VideoInput) => {
     if (id) {
       await updateVideoItem(id, input);
-      onShowToast(input.isPublished ? 'Vídeo publicado com sucesso.' : 'Rascunho de vídeo guardado.');
+      onShowToast(input.isPublished ? 'Vídeo atualizado e publicado com sucesso.' : 'Rascunho de vídeo guardado.');
     } else {
       await createVideoItem(input);
       onShowToast(input.isPublished ? 'Novo vídeo publicado com sucesso!' : 'Rascunho de vídeo guardado!');
@@ -203,7 +274,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       onShowToast(nextPublished ? 'Vídeo publicado com sucesso!' : 'Vídeo colocado em rascunho.');
       onVideosChanged();
     } catch (err) {
-      onShowToast('Erro ao atualizar estado.');
+      onShowToast('Erro ao atualizar estado do vídeo.');
       console.error(err);
     }
   };
@@ -212,7 +283,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setDeletingId(id);
     try {
       await deleteVideoItem(id);
-      onShowToast('Vídeo removido.');
+      onShowToast('Vídeo removido com sucesso.');
       onVideosChanged();
     } catch (err) {
       onShowToast('Não foi possível remover o vídeo.');
@@ -227,7 +298,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     <div className="min-h-screen bg-[#f4f5f7]">
       {/* HEADER */}
       <header className="bg-white border-b border-[#e0e0e0] sticky top-0 z-40 shadow-xs">
-        <div className="max-w-[1150px] mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
+        <div className="max-w-[1180px] mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-[#d9251d] text-white font-bold text-base px-3.5 py-1.5 rounded-tl-xl rounded-br-xl uppercase tracking-wider">
               MOSAICO
@@ -261,20 +332,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       </header>
 
       {/* MAIN CONTENT */}
-      <main className="max-w-[1150px] mx-auto px-4 sm:px-6 py-8">
+      <main className="max-w-[1180px] mx-auto px-4 sm:px-6 py-8">
         {/* TOP TITLE & QUICK ACTION BUTTONS */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-[#111] flex items-center gap-2">
               <Layers className="w-6 h-6 text-[#d9251d]" />
-              <span>Gestão de Conteúdo</span>
+              <span>Gestão de Conteúdos do Portal</span>
             </h1>
             <p className="text-xs text-gray-500 mt-1">
-              Faça a gestão e publicação em tempo real de notícias, imagens da galeria e vídeos do portal.
+              Adicione, edite, publique e remova notícias, registos fotográficos da galeria e conteúdos de vídeo com sincronização instantânea.
             </p>
           </div>
 
-          {/* ACTION BUTTONS (NOVA NOTÍCIA, NOVA IMAGEM, NOVO VÍDEO) */}
+          {/* ACTION BUTTONS */}
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => {
@@ -314,9 +385,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         {/* TABS SELECTOR */}
-        <div className="flex items-center gap-2 border-b border-gray-200 mb-6 bg-white p-1.5 rounded-xl shadow-xs">
+        <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 mb-6 bg-white p-1.5 rounded-xl shadow-xs">
           <button
-            onClick={() => setActiveTab('noticias')}
+            onClick={() => {
+              setActiveTab('noticias');
+              setSearchQuery('');
+            }}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
               activeTab === 'noticias'
                 ? 'bg-[#d9251d] text-white shadow-xs'
@@ -330,12 +404,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 activeTab === 'noticias' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
               }`}
             >
-              {articles.length}
+              {articleStats.total}
             </span>
           </button>
 
           <button
-            onClick={() => setActiveTab('galeria')}
+            onClick={() => {
+              setActiveTab('galeria');
+              setSearchQuery('');
+            }}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
               activeTab === 'galeria'
                 ? 'bg-blue-600 text-white shadow-xs'
@@ -349,12 +426,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 activeTab === 'galeria' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
               }`}
             >
-              {galleryItems.length}
+              {galleryStats.total}
             </span>
           </button>
 
           <button
-            onClick={() => setActiveTab('videos')}
+            onClick={() => {
+              setActiveTab('videos');
+              setSearchQuery('');
+            }}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
               activeTab === 'videos'
                 ? 'bg-purple-600 text-white shadow-xs'
@@ -368,9 +448,73 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 activeTab === 'videos' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
               }`}
             >
-              {videoItems.length}
+              {videoStats.total}
             </span>
           </button>
+        </div>
+
+        {/* SEARCH AND STATUS FILTER BAR */}
+        <div className="bg-white p-3.5 rounded-xl border border-gray-200/80 shadow-xs mb-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="relative w-full sm:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={`Pesquisar em ${
+                activeTab === 'noticias' ? 'notícias' : activeTab === 'galeria' ? 'galeria de imagens' : 'vídeos'
+              }...`}
+              className="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white outline-none focus:border-[#d9251d] transition-colors"
+            />
+          </div>
+
+          <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
+            <span className="text-xs text-gray-500 font-medium mr-1 hidden sm:inline">Estado:</span>
+            <button
+              onClick={() => setStatusFilter('todos')}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                statusFilter === 'todos'
+                  ? 'bg-gray-800 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Todos
+            </button>
+            <button
+              onClick={() => setStatusFilter('publicados')}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
+                statusFilter === 'publicados'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+              }`}
+            >
+              <CheckCircle2 className="w-3 h-3" />
+              Publicados (
+              {activeTab === 'noticias'
+                ? articleStats.published
+                : activeTab === 'galeria'
+                ? galleryStats.published
+                : videoStats.published}
+              )
+            </button>
+            <button
+              onClick={() => setStatusFilter('rascunhos')}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
+                statusFilter === 'rascunhos'
+                  ? 'bg-amber-600 text-white'
+                  : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+              }`}
+            >
+              <Clock className="w-3 h-3" />
+              Rascunhos (
+              {activeTab === 'noticias'
+                ? articleStats.drafts
+                : activeTab === 'galeria'
+                ? galleryStats.drafts
+                : videoStats.drafts}
+              )
+            </button>
+          </div>
         </div>
 
         {loadError && (
@@ -386,11 +530,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="flex items-center justify-center py-24">
                 <Loader2 className="w-6 h-6 text-[#d9251d] animate-spin" />
               </div>
-            ) : sortedArticles.length === 0 ? (
+            ) : filteredArticles.length === 0 ? (
               <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-xs">
                 <Newspaper className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                <h3 className="text-sm font-bold text-gray-800 mb-1">Ainda não há notícias</h3>
-                <p className="text-xs text-gray-500 mb-4">Comece por publicar a primeira notícia.</p>
+                <h3 className="text-sm font-bold text-gray-800 mb-1">
+                  {searchQuery || statusFilter !== 'todos'
+                    ? 'Nenhuma notícia encontrada com os filtros aplicados'
+                    : 'Ainda não há notícias'}
+                </h3>
+                <p className="text-xs text-gray-500 mb-4">
+                  {searchQuery || statusFilter !== 'todos'
+                    ? 'Tente ajustar o termo de pesquisa ou os filtros de estado.'
+                    : 'Comece por publicar a primeira notícia.'}
+                </p>
                 <button
                   onClick={() => {
                     setEditingArticle(null);
@@ -404,7 +556,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             ) : (
               <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
-                {sortedArticles.map((article) => (
+                {filteredArticles.map((article) => (
                   <div
                     key={article.id}
                     className="flex items-center gap-4 px-5 py-4 border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafafa] transition-colors"
@@ -456,6 +608,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           setArticleFormOpen(true);
                         }}
                         className="p-2 rounded-lg text-[#444] hover:text-[#d9251d] hover:bg-red-50 transition-colors cursor-pointer"
+                        title="Editar notícia"
                         aria-label="Editar"
                       >
                         <Pencil className="w-4 h-4" />
@@ -480,6 +633,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <button
                           onClick={() => setConfirmDeleteId(article.id)}
                           className="p-2 rounded-lg text-[#444] hover:text-[#d9251d] hover:bg-red-50 transition-colors cursor-pointer"
+                          title="Eliminar notícia"
                           aria-label="Remover"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -496,11 +650,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {/* TAB 2: GALERIA DE IMAGENS */}
         {activeTab === 'galeria' && (
           <div>
-            {galleryItems.length === 0 ? (
+            {filteredGalleryItems.length === 0 ? (
               <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-xs">
                 <ImageIcon className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                <h3 className="text-sm font-bold text-gray-800 mb-1">Ainda não há imagens na galeria</h3>
-                <p className="text-xs text-gray-500 mb-4">Adicione fotografias e registos visuais.</p>
+                <h3 className="text-sm font-bold text-gray-800 mb-1">
+                  {searchQuery || statusFilter !== 'todos'
+                    ? 'Nenhum registo fotográfico encontrado com os filtros aplicados'
+                    : 'Ainda não há imagens na galeria'}
+                </h3>
+                <p className="text-xs text-gray-500 mb-4">
+                  {searchQuery || statusFilter !== 'todos'
+                    ? 'Tente ajustar o termo de pesquisa ou o filtro de estado.'
+                    : 'Adicione fotografias e registos visuais oficiais.'}
+                </p>
                 <button
                   onClick={() => {
                     setEditingGalleryItem(null);
@@ -514,7 +676,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             ) : (
               <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
-                {galleryItems.map((item) => (
+                {filteredGalleryItems.map((item) => (
                   <div
                     key={item.id}
                     className="flex items-center gap-4 px-5 py-4 border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafafa] transition-colors"
@@ -561,6 +723,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           setGalleryFormOpen(true);
                         }}
                         className="p-2 rounded-lg text-[#444] hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+                        title="Editar imagem"
                         aria-label="Editar"
                       >
                         <Pencil className="w-4 h-4" />
@@ -585,6 +748,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <button
                           onClick={() => setConfirmDeleteId(item.id)}
                           className="p-2 rounded-lg text-[#444] hover:text-[#d9251d] hover:bg-red-50 transition-colors cursor-pointer"
+                          title="Eliminar imagem da galeria"
                           aria-label="Remover"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -601,11 +765,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {/* TAB 3: VÍDEOS */}
         {activeTab === 'videos' && (
           <div>
-            {videoItems.length === 0 ? (
+            {filteredVideoItems.length === 0 ? (
               <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-xs">
                 <VideoIcon className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                <h3 className="text-sm font-bold text-gray-800 mb-1">Ainda não há vídeos registados</h3>
-                <p className="text-xs text-gray-500 mb-4">Adicione reportagens, transmissões e documentários.</p>
+                <h3 className="text-sm font-bold text-gray-800 mb-1">
+                  {searchQuery || statusFilter !== 'todos'
+                    ? 'Nenhum vídeo encontrado com os filtros aplicados'
+                    : 'Ainda não há vídeos registados'}
+                </h3>
+                <p className="text-xs text-gray-500 mb-4">
+                  {searchQuery || statusFilter !== 'todos'
+                    ? 'Tente ajustar o termo de pesquisa ou o filtro de estado.'
+                    : 'Adicione reportagens, transmissões e documentários.'}
+                </p>
                 <button
                   onClick={() => {
                     setEditingVideoItem(null);
@@ -619,7 +791,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             ) : (
               <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
-                {videoItems.map((item) => (
+                {filteredVideoItems.map((item) => (
                   <div
                     key={item.id}
                     className="flex items-center gap-4 px-5 py-4 border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafafa] transition-colors"
@@ -655,8 +827,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </div>
                       <h3 className="text-sm font-semibold text-[#111] truncate">{item.title}</h3>
                       <p className="text-[11px] text-gray-500 line-clamp-1">{item.description}</p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">
-                        {item.date} {item.videoUrl ? `• Ficheiro: ${item.videoUrl}` : ''}
+                      <p className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1.5">
+                        <span>{item.date}</span>
+                        {item.videoUrl && (
+                          <span className="flex items-center gap-1 text-gray-500 font-mono text-[9px] bg-gray-100 px-1.5 py-0.5 rounded max-w-xs truncate">
+                            <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+                            {item.videoUrl}
+                          </span>
+                        )}
                       </p>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
@@ -676,6 +854,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           setVideoFormOpen(true);
                         }}
                         className="p-2 rounded-lg text-[#444] hover:text-purple-600 hover:bg-purple-50 transition-colors cursor-pointer"
+                        title="Editar vídeo"
                         aria-label="Editar"
                       >
                         <Pencil className="w-4 h-4" />
@@ -700,6 +879,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <button
                           onClick={() => setConfirmDeleteId(item.id)}
                           className="p-2 rounded-lg text-[#444] hover:text-[#d9251d] hover:bg-red-50 transition-colors cursor-pointer"
+                          title="Eliminar vídeo"
                           aria-label="Remover"
                         >
                           <Trash2 className="w-4 h-4" />
