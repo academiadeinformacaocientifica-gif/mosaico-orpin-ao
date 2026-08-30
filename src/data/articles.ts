@@ -243,7 +243,7 @@ export const initialArticles: Article[] = [
     imageUrl: independencia50Img,
     likes: 89,
     commentsCount: 24,
-    isFeatured: true,
+    isFeatured: false,
     isCarousel: false,
     tags: ['50 Anos de Independência', 'Dia de Angola 2025', 'Las Ventas', 'Hotel Intercontinental', 'Diplomacia Cultural', 'Balbina da Silva', 'Feito em Angola', 'Música Angolana'],
     comments: [

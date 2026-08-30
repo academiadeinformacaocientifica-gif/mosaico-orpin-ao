@@ -111,6 +111,7 @@ export interface MagazineEdition {
   pagesCount: number;
   highlights: string[];
   editorialNote: string;
+  isPublished?: boolean;
 }
 
 export interface DiplomaticEvent {

@@ -15,6 +15,7 @@ import {
   Newspaper,
   Image as ImageIcon,
   Video as VideoIcon,
+  BookMarked,
   Layers,
   Play,
   Search,
@@ -22,7 +23,7 @@ import {
   Clock,
   ExternalLink,
 } from 'lucide-react';
-import { Article, GalleryItem, VideoItem } from '../../types';
+import { Article, GalleryItem, VideoItem, MagazineEdition } from '../../types';
 import { useAuth } from '../../lib/AuthContext';
 import { ArticleInput, createArticle, updateArticle, deleteArticle } from '../../lib/articleService';
 import {
@@ -37,22 +38,31 @@ import {
   updateVideoItem,
   deleteVideoItem,
 } from '../../lib/videoService';
+import {
+  MagazineEditionInput,
+  createMagazineEdition,
+  updateMagazineEdition,
+  deleteMagazineEdition,
+} from '../../lib/editionService';
 import { ArticleFormModal } from './ArticleFormModal';
 import { GalleryFormModal } from './GalleryFormModal';
 import { VideoFormModal } from './VideoFormModal';
+import { EditionFormModal } from './EditionFormModal';
 
-type AdminTab = 'noticias' | 'galeria' | 'videos';
+type AdminTab = 'noticias' | 'galeria' | 'videos' | 'edicoes';
 type StatusFilter = 'todos' | 'publicados' | 'rascunhos';
 
 interface AdminDashboardProps {
   articles: Article[];
   galleryItems: GalleryItem[];
   videoItems: VideoItem[];
+  magazineEditions: MagazineEdition[];
   loading: boolean;
   loadError: string | null;
   onArticlesChanged: () => void;
   onGalleryChanged: () => void;
   onVideosChanged: () => void;
+  onEditionsChanged: () => void;
   onGoToSite: () => void;
   onShowToast: (msg: string) => void;
 }
@@ -61,11 +71,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   articles,
   galleryItems,
   videoItems,
+  magazineEditions,
   loading,
   loadError,
   onArticlesChanged,
   onGalleryChanged,
   onVideosChanged,
+  onEditionsChanged,
   onGoToSite,
   onShowToast,
 }) => {
@@ -87,6 +99,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Video State
   const [videoFormOpen, setVideoFormOpen] = useState(false);
   const [editingVideoItem, setEditingVideoItem] = useState<VideoItem | null>(null);
+
+  // Magazine Edition State
+  const [editionFormOpen, setEditionFormOpen] = useState(false);
+  const [editingEdition, setEditingEdition] = useState<MagazineEdition | null>(null);
 
   // Deletion tracking
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -143,6 +159,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     });
   }, [videoItems, searchQuery, statusFilter]);
 
+  // Filtered Magazine Editions
+  const filteredMagazineEditions = useMemo(() => {
+    return [...magazineEditions]
+      .sort((a, b) => (b.editionNumber || 0) - (a.editionNumber || 0))
+      .filter((ed) => {
+        if (statusFilter === 'publicados' && ed.isPublished === false) return false;
+        if (statusFilter === 'rascunhos' && ed.isPublished !== false) return false;
+        if (!searchQuery.trim()) return true;
+        const q = searchQuery.toLowerCase();
+        return (
+          ed.title.toLowerCase().includes(q) ||
+          ed.theme.toLowerCase().includes(q) ||
+          ed.period.toLowerCase().includes(q) ||
+          ed.editorialNote.toLowerCase().includes(q) ||
+          (ed.highlights && ed.highlights.some((h) => h.toLowerCase().includes(q)))
+        );
+      });
+  }, [magazineEditions, searchQuery, statusFilter]);
+
   // Stats Counters
   const articleStats = useMemo(() => {
     const published = articles.filter((a) => a.isPublished !== false).length;
@@ -161,6 +196,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const drafts = videoItems.length - published;
     return { total: videoItems.length, published, drafts };
   }, [videoItems]);
+
+  const magazineStats = useMemo(() => {
+    const published = magazineEditions.filter((e) => e.isPublished !== false).length;
+    const drafts = magazineEditions.length - published;
+    return { total: magazineEditions.length, published, drafts };
+  }, [magazineEditions]);
 
   // Articles CRUD Handlers
   const handleSaveArticle = async (id: string | null, input: ArticleInput) => {
@@ -315,6 +356,50 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
+  // Magazine Edition CRUD Handlers
+  const handleSaveEdition = async (id: string | null, input: MagazineEditionInput) => {
+    if (id) {
+      await updateMagazineEdition(id, input);
+      onShowToast(input.isPublished ? 'Edição da revista atualizada e publicada com sucesso.' : 'Rascunho da edição guardado.');
+    } else {
+      await createMagazineEdition(input);
+      onShowToast(input.isPublished ? 'Nova edição da revista publicada com sucesso!' : 'Rascunho da edição guardado!');
+    }
+    setEditionFormOpen(false);
+    setEditingEdition(null);
+    onEditionsChanged();
+  };
+
+  const handleToggleEditionPublish = async (edition: MagazineEdition) => {
+    try {
+      const nextPublished = !edition.isPublished;
+      await updateMagazineEdition(edition.id, {
+        ...edition,
+        isPublished: nextPublished,
+      });
+      onShowToast(nextPublished ? 'Edição da revista publicada no portal!' : 'Edição colocada em rascunho.');
+      onEditionsChanged();
+    } catch (err) {
+      onShowToast('Erro ao atualizar estado da edição da revista.');
+      console.error(err);
+    }
+  };
+
+  const handleDeleteEdition = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await deleteMagazineEdition(id);
+      onShowToast('Edição da revista removida com sucesso.');
+      onEditionsChanged();
+    } catch (err) {
+      onShowToast('Não foi possível remover a edição.');
+      console.error(err);
+    } finally {
+      setDeletingId(null);
+      setConfirmDeleteId(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#f4f5f7]">
       {/* HEADER */}
@@ -362,7 +447,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <span>Gestão de Conteúdos do Portal</span>
             </h1>
             <p className="text-xs text-gray-500 mt-1">
-              Adicione, edite, publique e remova notícias, registos fotográficos da galeria e conteúdos de vídeo com sincronização instantânea.
+              Adicione, edite, publique e remova notícias, edições da revista, registos da galeria e vídeos com sincronização instantânea.
             </p>
           </div>
 
@@ -377,6 +462,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             >
               <Plus className="w-4 h-4" />
               <span>Nova Notícia</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setEditingEdition(null);
+                setEditionFormOpen(true);
+              }}
+              className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98"
+            >
+              <Plus className="w-4 h-4" />
+              <BookMarked className="w-4 h-4" />
+              <span>Nova Edição</span>
             </button>
 
             <button
@@ -426,6 +523,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               }`}
             >
               {articleStats.total}
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('edicoes');
+              setSearchQuery('');
+            }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeTab === 'edicoes'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <BookMarked className="w-4 h-4" />
+            <span>Revista (Edições)</span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'edicoes' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              {magazineStats.total}
             </span>
           </button>
 
@@ -483,7 +602,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={`Pesquisar em ${
-                activeTab === 'noticias' ? 'notícias' : activeTab === 'galeria' ? 'galeria de imagens' : 'vídeos'
+                activeTab === 'noticias'
+                  ? 'notícias'
+                  : activeTab === 'edicoes'
+                  ? 'edições da revista'
+                  : activeTab === 'galeria'
+                  ? 'galeria de imagens'
+                  : 'vídeos'
               }...`}
               className="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white outline-none focus:border-[#d9251d] transition-colors"
             />
@@ -513,6 +638,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               Publicados (
               {activeTab === 'noticias'
                 ? articleStats.published
+                : activeTab === 'edicoes'
+                ? magazineStats.published
                 : activeTab === 'galeria'
                 ? galleryStats.published
                 : videoStats.published}
@@ -689,7 +816,137 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
 
-        {/* TAB 2: GALERIA DE IMAGENS */}
+        {/* TAB 2: EDIÇÕES DA REVISTA MOSAICO */}
+        {activeTab === 'edicoes' && (
+          <div>
+            {filteredMagazineEditions.length === 0 ? (
+              <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-xs">
+                <BookMarked className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                <h3 className="text-sm font-bold text-gray-800 mb-1">
+                  {searchQuery || statusFilter !== 'todos'
+                    ? 'Nenhuma edição encontrada com os filtros aplicados'
+                    : 'Ainda não há edições da revista registadas'}
+                </h3>
+                <p className="text-xs text-gray-500 mb-4">
+                  {searchQuery || statusFilter !== 'todos'
+                    ? 'Tente ajustar o termo de pesquisa ou o filtro de estado.'
+                    : 'Adicione edições trimestrais da Revista Mosaico com capa, sumário e destaques.'}
+                </p>
+                <button
+                  onClick={() => {
+                    setEditingEdition(null);
+                    setEditionFormOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Nova Edição
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+                {filteredMagazineEditions.map((edition) => (
+                  <div
+                    key={edition.id}
+                    className="flex items-center gap-4 px-5 py-4 border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafafa] transition-colors"
+                  >
+                    <div className="relative w-14 h-18 rounded-lg overflow-hidden shrink-0 bg-gray-100 border border-gray-200 shadow-xs">
+                      <img
+                        src={edition.coverImage}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute top-1 left-1 bg-black/75 text-white text-[9px] font-black px-1 rounded">
+                        #{edition.editionNumber}
+                      </div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wide">
+                          Edição nº {edition.editionNumber} • {edition.period} {edition.year}
+                        </span>
+                        <span className="text-[10px] font-bold bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">
+                          {edition.pagesCount} Páginas
+                        </span>
+                        {edition.isPublished !== false ? (
+                          <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                            Publicado
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                            Rascunho
+                          </span>
+                        )}
+                        {edition.pdfUrl && (
+                          <span className="text-[10px] font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full hidden sm:inline">
+                            PDF Anexado
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-sm font-semibold text-[#111] truncate">{edition.title}</h3>
+                      <p className="text-[11px] text-gray-600 font-medium line-clamp-1">{edition.theme}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-1">
+                        {edition.editorialNote}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleToggleEditionPublish(edition)}
+                        className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                          edition.isPublished !== false
+                            ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        }`}
+                      >
+                        {edition.isPublished !== false ? 'Despublicar' : 'Publicar'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingEdition(edition);
+                          setEditionFormOpen(true);
+                        }}
+                        className="p-2 rounded-lg text-[#444] hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+                        title="Editar edição"
+                        aria-label="Editar"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      {confirmDeleteId === edition.id ? (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleDeleteEdition(edition.id)}
+                            disabled={deletingId === edition.id}
+                            className="text-[11px] font-bold text-white bg-[#d9251d] px-2.5 py-1.5 rounded-lg cursor-pointer"
+                          >
+                            {deletingId === edition.id ? '...' : 'Confirmar'}
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="text-[11px] font-semibold text-[#666] px-2 py-1.5 cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteId(edition.id)}
+                          className="p-2 rounded-lg text-[#444] hover:text-[#d9251d] hover:bg-red-50 transition-colors cursor-pointer"
+                          title="Eliminar edição da revista"
+                          aria-label="Remover"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 3: GALERIA DE IMAGENS */}
         {activeTab === 'galeria' && (
           <div>
             {filteredGalleryItems.length === 0 ? (
@@ -969,6 +1226,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             setEditingVideoItem(null);
           }}
           onSave={handleSaveVideo}
+        />
+      )}
+
+      {/* EDITION FORM MODAL */}
+      {editionFormOpen && (
+        <EditionFormModal
+          initialEdition={editingEdition}
+          onClose={() => {
+            setEditionFormOpen(false);
+            setEditingEdition(null);
+          }}
+          onSave={handleSaveEdition}
         />
       )}
     </div>

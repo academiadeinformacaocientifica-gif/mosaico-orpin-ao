@@ -5,6 +5,9 @@
 
 import { supabase, isSupabaseConfigured } from './supabase';
 import { Article, CategoryId, Comment } from '../types';
+import { initialArticles } from '../data/articles';
+
+const LOCAL_STORAGE_KEY = 'mosaico_articles_v5';
 
 interface ArticleRow {
   id: string;
@@ -62,8 +65,8 @@ function rowToArticle(row: ArticleRow): Article {
     likes: row.likes,
     commentsCount: row.comments_count,
     comments: row.comments || undefined,
-    isFeatured: row.is_featured,
-    isCarousel: row.is_carousel,
+    isFeatured: Boolean(row.is_featured),
+    isCarousel: Boolean(row.is_carousel),
     isPublished: row.is_published ?? true,
     tags: row.tags || [],
   };
@@ -96,6 +99,29 @@ function articleToRow(article: ArticleInput): Omit<ArticleRow, 'created_at' | 'u
   };
 }
 
+function getLocalArticles(): Article[] {
+  try {
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error('Erro ao ler notícias locais:', e);
+  }
+  return initialArticles;
+}
+
+function saveLocalArticles(items: Article[]) {
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
+  } catch (e) {
+    console.error('Erro ao guardar notícias locais:', e);
+  }
+}
+
 export function slugify(title: string): string {
   const base = title
     .normalize('NFD')
@@ -112,128 +138,167 @@ export function slugify(title: string): string {
 }
 
 export async function fetchArticles(): Promise<Article[]> {
-  if (!isSupabaseConfigured) return [];
-  try {
-    const { data, error } = await supabase
-      .from('articles')
-      .select('*')
-      .order('iso_date', { ascending: false });
+  if (isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase
+        .from('articles')
+        .select('*')
+        .order('iso_date', { ascending: false });
 
-    if (error) {
-      if (error.code === 'PGRST205' || error.message?.includes('relation "public.articles" does not exist') || error.message?.includes('does not exist')) {
-        console.warn('[Mosaico Angolano] Tabela "articles" não encontrada no Supabase. A utilizar catálogo de artigos editorial.');
-        return [];
+      if (error) {
+        console.warn('[Mosaico Angolano] Erro ao obter artigos do Supabase:', error.message || error);
+        return getLocalArticles();
       }
-      console.warn('[Mosaico Angolano] Erro ao obter artigos do Supabase:', error.message || error);
-      return [];
+      if (data && Array.isArray(data) && data.length > 0) {
+        const fromDb = (data as ArticleRow[]).map(rowToArticle);
+        saveLocalArticles(fromDb);
+        return fromDb;
+      }
+    } catch (err) {
+      console.warn('[Mosaico Angolano] Falha de ligação ao Supabase:', err);
     }
-    if (!data || !Array.isArray(data)) return [];
-    return (data as ArticleRow[]).map(rowToArticle);
-  } catch (err) {
-    console.warn('[Mosaico Angolano] Não foi possível ligar ao Supabase (modo offline/demonstração ativado):', err);
-    return [];
   }
+  return getLocalArticles();
 }
 
 export async function createArticle(article: ArticleInput): Promise<Article> {
-  if (!isSupabaseConfigured) {
-    throw new Error('Supabase não configurado. Defina as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no ficheiro .env.');
-  }
-  const row = articleToRow(article);
-  try {
-    let { data, error } = await supabase
-      .from('articles')
-      .insert(row)
-      .select()
-      .single();
+  const newArticle: Article = {
+    id: article.id || slugify(article.title),
+    title: article.title,
+    subtitle: article.subtitle,
+    description: article.description,
+    fullContent: article.fullContent,
+    category: article.category,
+    categoryId: article.categoryId,
+    author: article.author,
+    date: article.date,
+    isoDate: article.isoDate,
+    readTime: article.readTime,
+    imageUrl: article.imageUrl,
+    gallery: article.gallery,
+    likes: article.likes ?? 0,
+    commentsCount: article.commentsCount ?? 0,
+    comments: article.comments || [],
+    isFeatured: Boolean(article.isFeatured),
+    isCarousel: Boolean(article.isCarousel),
+    isPublished: article.isPublished !== false,
+    tags: article.tags || [],
+  };
 
-    // If is_published column does not exist in user's schema, retry without it
-    if (error && (error.code === 'PGRST204' || error.message?.includes('is_published'))) {
-      const { is_published: _p, ...rowWithoutPublished } = row as any;
-      const retryResult = await supabase
+  if (isSupabaseConfigured) {
+    const row = articleToRow(newArticle);
+    try {
+      let { data, error } = await supabase
         .from('articles')
-        .insert(rowWithoutPublished)
+        .insert(row)
         .select()
         .single();
-      data = retryResult.data;
-      error = retryResult.error;
-    }
 
-    if (error) {
-      if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
-        throw new Error('Não foi possível estabelecer ligação ao servidor do Supabase. Verifique a rede.');
+      if (error && (error.code === 'PGRST204' || error.message?.includes('is_published'))) {
+        const { is_published: _p, ...rowWithoutPublished } = row as any;
+        const retryResult = await supabase
+          .from('articles')
+          .insert(rowWithoutPublished)
+          .select()
+          .single();
+        data = retryResult.data;
+        error = retryResult.error;
       }
-      throw error;
+
+      if (!error && data) {
+        const saved = rowToArticle(data as ArticleRow);
+        const current = getLocalArticles();
+        saveLocalArticles([saved, ...current.filter((a) => a.id !== saved.id)]);
+        return saved;
+      }
+    } catch (err) {
+      console.warn('Erro ao guardar no Supabase, a guardar localmente:', err);
     }
-    return rowToArticle(data as ArticleRow);
-  } catch (err: any) {
-    if (err?.message?.includes('Failed to fetch') || err?.name === 'TypeError') {
-      throw new Error('Falha de ligação à base de dados. Verifique a configuração do Supabase.');
-    }
-    throw err;
   }
+
+  const current = getLocalArticles();
+  const updated = [newArticle, ...current.filter((a) => a.id !== newArticle.id)];
+  saveLocalArticles(updated);
+  return newArticle;
 }
 
 export async function updateArticle(id: string, article: ArticleInput): Promise<Article> {
-  if (!isSupabaseConfigured) {
-    throw new Error('Supabase não configurado. Defina as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.');
-  }
-  const row = articleToRow(article);
-  try {
-    const updatePayload: any = { ...row, updated_at: new Date().toISOString() };
-    let { data, error } = await supabase
-      .from('articles')
-      .update(updatePayload)
-      .eq('id', id)
-      .select()
-      .single();
+  const updatedArticle: Article = {
+    id,
+    title: article.title,
+    subtitle: article.subtitle,
+    description: article.description,
+    fullContent: article.fullContent,
+    category: article.category,
+    categoryId: article.categoryId,
+    author: article.author,
+    date: article.date,
+    isoDate: article.isoDate,
+    readTime: article.readTime,
+    imageUrl: article.imageUrl,
+    gallery: article.gallery,
+    likes: article.likes ?? 0,
+    commentsCount: article.commentsCount ?? 0,
+    comments: article.comments || [],
+    isFeatured: Boolean(article.isFeatured),
+    isCarousel: Boolean(article.isCarousel),
+    isPublished: article.isPublished !== false,
+    tags: article.tags || [],
+  };
 
-    // If is_published column does not exist in user's schema, retry without it
-    if (error && (error.code === 'PGRST204' || error.message?.includes('is_published'))) {
-      const { is_published: _p, ...payloadWithoutPublished } = updatePayload;
-      const retryResult = await supabase
+  if (isSupabaseConfigured) {
+    const row = articleToRow(updatedArticle);
+    try {
+      const updatePayload: any = { ...row, updated_at: new Date().toISOString() };
+      let { data, error } = await supabase
         .from('articles')
-        .update(payloadWithoutPublished)
+        .update(updatePayload)
         .eq('id', id)
         .select()
         .single();
-      data = retryResult.data;
-      error = retryResult.error;
-    }
 
-    if (error) {
-      if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
-        throw new Error('Não foi possível estabelecer ligação ao servidor do Supabase. Verifique a rede.');
+      if (error && (error.code === 'PGRST204' || error.message?.includes('is_published'))) {
+        const { is_published: _p, ...payloadWithoutPublished } = updatePayload;
+        const retryResult = await supabase
+          .from('articles')
+          .update(payloadWithoutPublished)
+          .eq('id', id)
+          .select()
+          .single();
+        data = retryResult.data;
+        error = retryResult.error;
       }
-      throw error;
+
+      if (!error && data) {
+        const saved = rowToArticle(data as ArticleRow);
+        const current = getLocalArticles();
+        saveLocalArticles(current.map((a) => (a.id === id ? saved : a)));
+        return saved;
+      }
+    } catch (err) {
+      console.warn('Erro ao atualizar no Supabase, a atualizar localmente:', err);
     }
-    return rowToArticle(data as ArticleRow);
-  } catch (err: any) {
-    if (err?.message?.includes('Failed to fetch') || err?.name === 'TypeError') {
-      throw new Error('Falha de ligação à base de dados. Verifique a configuração do Supabase.');
-    }
-    throw err;
   }
+
+  const current = getLocalArticles();
+  const exists = current.some((a) => a.id === id);
+  const updatedList = exists
+    ? current.map((a) => (a.id === id ? updatedArticle : a))
+    : [updatedArticle, ...current];
+  saveLocalArticles(updatedList);
+  return updatedArticle;
 }
 
 export async function deleteArticle(id: string): Promise<void> {
-  if (!isSupabaseConfigured) {
-    throw new Error('Supabase não configurado. Impossível eliminar da base de dados.');
-  }
-  try {
-    const { error } = await supabase.from('articles').delete().eq('id', id);
-    if (error) {
-      if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
-        throw new Error('Não foi possível estabelecer ligação ao servidor do Supabase.');
-      }
-      throw error;
+  if (isSupabaseConfigured) {
+    try {
+      await supabase.from('articles').delete().eq('id', id);
+    } catch (err) {
+      console.warn('Erro ao eliminar no Supabase:', err);
     }
-  } catch (err: any) {
-    if (err?.message?.includes('Failed to fetch') || err?.name === 'TypeError') {
-      throw new Error('Falha de ligação à base de dados. Verifique a configuração do Supabase.');
-    }
-    throw err;
   }
+  const current = getLocalArticles();
+  saveLocalArticles(current.filter((a) => a.id !== id));
 }
 
 export async function uploadArticleImage(file: File): Promise<string> {
@@ -254,26 +319,6 @@ export async function uploadArticleImage(file: File): Promise<string> {
       .upload(path, file, { cacheControl: '3600', upsert: false });
 
     if (error) {
-      if (
-        error.message?.includes('Bucket not found') ||
-        error.message?.includes('not found') ||
-        error.message?.includes('does not exist')
-      ) {
-        // Fallback to local Data URL if bucket does not exist
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = (e) => reject(e);
-          reader.readAsDataURL(file);
-        });
-      }
-      throw error;
-    }
-
-    const { data } = supabase.storage.from('article-images').getPublicUrl(path);
-    return data.publicUrl;
-  } catch (err: any) {
-    if (err?.message?.includes('Failed to fetch') || err?.name === 'TypeError') {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result as string);
@@ -281,7 +326,15 @@ export async function uploadArticleImage(file: File): Promise<string> {
         reader.readAsDataURL(file);
       });
     }
-    throw err;
+
+    const { data } = supabase.storage.from('article-images').getPublicUrl(path);
+    return data.publicUrl;
+  } catch (err: any) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (e) => reject(e);
+      reader.readAsDataURL(file);
+    });
   }
 }
-

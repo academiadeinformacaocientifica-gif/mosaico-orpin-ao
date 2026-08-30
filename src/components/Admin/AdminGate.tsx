@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { Loader2 } from 'lucide-react';
-import { Article, GalleryItem, VideoItem } from '../../types';
+import { Article, GalleryItem, VideoItem, MagazineEdition } from '../../types';
 import { useAuth } from '../../lib/AuthContext';
 import { AdminLoginPage } from './AdminLoginPage';
 import { AdminDashboard } from './AdminDashboard';
@@ -14,11 +14,13 @@ interface AdminGateProps {
   articles: Article[];
   galleryItems: GalleryItem[];
   videoItems: VideoItem[];
+  magazineEditions: MagazineEdition[];
   articlesLoading: boolean;
   articlesError: string | null;
   onArticlesChanged: () => void;
   onGalleryChanged: () => void;
   onVideosChanged: () => void;
+  onEditionsChanged: () => void;
   onGoToSite: () => void;
   onShowToast: (msg: string) => void;
 }
@@ -27,11 +29,13 @@ export const AdminGate: React.FC<AdminGateProps> = ({
   articles,
   galleryItems,
   videoItems,
+  magazineEditions,
   articlesLoading,
   articlesError,
   onArticlesChanged,
   onGalleryChanged,
   onVideosChanged,
+  onEditionsChanged,
   onGoToSite,
   onShowToast,
 }) => {
@@ -54,11 +58,13 @@ export const AdminGate: React.FC<AdminGateProps> = ({
       articles={articles}
       galleryItems={galleryItems}
       videoItems={videoItems}
+      magazineEditions={magazineEditions}
       loading={articlesLoading}
       loadError={articlesError}
       onArticlesChanged={onArticlesChanged}
       onGalleryChanged={onGalleryChanged}
       onVideosChanged={onVideosChanged}
+      onEditionsChanged={onEditionsChanged}
       onGoToSite={onGoToSite}
       onShowToast={onShowToast}
     />

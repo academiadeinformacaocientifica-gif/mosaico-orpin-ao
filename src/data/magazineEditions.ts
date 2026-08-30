@@ -1,6 +1,6 @@
 import { MagazineEdition } from '../types';
 
-export const magazineEditions: MagazineEdition[] = [
+export const initialMagazineEditions: MagazineEdition[] = [
   {
     id: 'ed-12',
     editionNumber: 12,
@@ -53,3 +53,5 @@ export const magazineEditions: MagazineEdition[] = [
     editorialNote: 'Celebrar a memória é honrar as pontes sólidas erguidas com dedicação ao longo de quatro décadas.'
   }
 ];
+
+export const magazineEditions = initialMagazineEditions;

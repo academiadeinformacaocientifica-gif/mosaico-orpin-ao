@@ -8,7 +8,7 @@ import { NavPage, Article, MagazineEdition, CategoryId, GalleryItem, VideoItem }
 import { initialArticles } from './data/articles';
 import { initialGalleryItems } from './data/galleryData';
 import { initialVideoItems } from './data/videosData';
-import { magazineEditions } from './data/magazineEditions';
+import { initialMagazineEditions, magazineEditions } from './data/magazineEditions';
 import { upcomingEvents } from './data/events';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -30,6 +30,7 @@ import { AdminGate } from './components/Admin/AdminGate';
 import { fetchArticles } from './lib/articleService';
 import { fetchGalleryItems } from './lib/galleryService';
 import { fetchVideoItems } from './lib/videoService';
+import { fetchMagazineEditions } from './lib/editionService';
 import { isSupabaseConfigured } from './lib/supabase';
 import { Search, X, FolderSearch } from 'lucide-react';
 
@@ -49,14 +50,11 @@ export default function App() {
   const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(initialGalleryItems);
   const [videoItems, setVideoItems] = useState<VideoItem[]>(initialVideoItems);
+  const [magazineEditionsList, setMagazineEditionsList] = useState<MagazineEdition[]>(initialMagazineEditions);
   const [articlesLoading, setArticlesLoading] = useState(isSupabaseConfigured);
   const [articlesError, setArticlesError] = useState<string | null>(null);
 
   const loadArticlesFromBackend = useCallback(async () => {
-    if (!isSupabaseConfigured) {
-      setArticlesLoading(false);
-      return;
-    }
     setArticlesLoading(true);
     setArticlesError(null);
     try {
@@ -67,7 +65,7 @@ export default function App() {
         setArticles(initialArticles);
       }
     } catch (err) {
-      console.warn('[Mosaico Angolano] Erro ao carregar notícias do servidor, a utilizar catálogo padrão:', err);
+      console.warn('[Mosaico Angolano] Erro ao carregar notícias, a utilizar catálogo padrão:', err);
       setArticles(initialArticles);
     } finally {
       setArticlesLoading(false);
@@ -92,11 +90,21 @@ export default function App() {
     }
   }, []);
 
+  const loadEditionsFromBackend = useCallback(async () => {
+    try {
+      const items = await fetchMagazineEditions();
+      setMagazineEditionsList(items.length > 0 ? items : initialMagazineEditions);
+    } catch (err) {
+      console.error('Erro ao carregar edições da revista:', err);
+    }
+  }, []);
+
   useEffect(() => {
     loadArticlesFromBackend();
     loadGalleryFromBackend();
     loadVideosFromBackend();
-  }, [loadArticlesFromBackend, loadGalleryFromBackend, loadVideosFromBackend]);
+    loadEditionsFromBackend();
+  }, [loadArticlesFromBackend, loadGalleryFromBackend, loadVideosFromBackend, loadEditionsFromBackend]);
 
   useEffect(() => {
     const handleUrlChange = () => {
@@ -428,17 +436,24 @@ export default function App() {
     [videoItems]
   );
 
+  const publicMagazineEditions = useMemo(
+    () => magazineEditionsList.filter((e) => e.isPublished !== false),
+    [magazineEditionsList]
+  );
+
   if (currentPage === 'admin') {
     return (
       <AdminGate
         articles={articles}
         galleryItems={galleryItems}
         videoItems={videoItems}
+        magazineEditions={magazineEditionsList}
         articlesLoading={articlesLoading}
         articlesError={articlesError}
         onArticlesChanged={loadArticlesFromBackend}
         onGalleryChanged={loadGalleryFromBackend}
         onVideosChanged={loadVideosFromBackend}
+        onEditionsChanged={loadEditionsFromBackend}
         onGoToSite={() => handleNavigate('home')}
         onShowToast={showToast}
       />
@@ -533,7 +548,7 @@ export default function App() {
                 carouselArticles={carouselArticles}
                 secondaryArticles={secondaryArticles}
                 latestArticles={latestArticles}
-                magazineEditions={magazineEditions}
+                magazineEditions={publicMagazineEditions}
                 upcomingEvents={upcomingEvents}
                 galleryItems={publicGalleryItems}
                 onOpenArticle={handleOpenArticle}
@@ -613,6 +628,7 @@ export default function App() {
             {/* EDIÇÕES REVISTA */}
             {currentPage === 'edicoes' && (
               <EditionsPage
+                editions={magazineEditionsList}
                 onOpenEdition={setSelectedEdition}
                 onShowToast={showToast}
               />
