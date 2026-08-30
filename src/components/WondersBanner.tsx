@@ -122,71 +122,50 @@ export const WondersBanner: React.FC<WondersBannerProps> = ({ onNavigate }) => {
           <div className="absolute inset-0 z-20 bg-[radial-gradient(circle_at_20%_30%,rgba(217,37,29,0.15),transparent_60%)]" />
         </div>
 
-        {/* TOP BAR / BADGE: CURRENT WONDER LOCATION */}
-        <div className="relative z-30 flex flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex items-center gap-2 bg-black/60 backdrop-blur-md border border-white/20 px-3.5 py-1.5 rounded-full shadow-lg">
-            <span className="flex h-2.5 w-2.5 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#d9251d] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#d9251d]"></span>
-            </span>
-            <span className="text-[11px] sm:text-xs font-bold tracking-wide uppercase text-white flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>7 Maravilhas de Angola</span>
-              <span className="text-white/40">•</span>
-              <span className="text-amber-300 font-semibold">{currentWonder.number}/7</span>
-            </span>
-          </div>
+        {/* TOP CONTROLS */}
+        <div className="relative z-30 flex items-center justify-end gap-2">
+          {/* PLAY/PAUSE TOGGLE */}
+          <button
+            onClick={() => setIsPlaying(!isPlaying)}
+            className="bg-black/50 hover:bg-black/80 backdrop-blur-md text-white/80 hover:text-white p-2 rounded-full border border-white/15 transition-colors cursor-pointer text-xs flex items-center gap-1.5"
+            title={isPlaying ? 'Pausar transição' : 'Retomar transição'}
+            aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}
+          >
+            {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+          </button>
 
-          <div className="flex items-center gap-2">
-            {/* PLAY/PAUSE TOGGLE */}
+          {/* PREV/NEXT CONTROLS */}
+          <div className="flex items-center bg-black/50 backdrop-blur-md rounded-full border border-white/15 p-0.5">
             <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              className="bg-black/50 hover:bg-black/80 backdrop-blur-md text-white/80 hover:text-white p-2 rounded-full border border-white/15 transition-colors cursor-pointer text-xs flex items-center gap-1.5"
-              title={isPlaying ? 'Pausar transição' : 'Retomar transição'}
-              aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}
+              onClick={handlePrev}
+              className="p-1.5 hover:bg-white/20 rounded-full text-white transition-colors cursor-pointer"
+              title="Maravilha anterior"
+              aria-label="Anterior"
             >
-              {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+              <ChevronLeft className="w-4 h-4" />
             </button>
-
-            {/* PREV/NEXT CONTROLS */}
-            <div className="flex items-center bg-black/50 backdrop-blur-md rounded-full border border-white/15 p-0.5">
-              <button
-                onClick={handlePrev}
-                className="p-1.5 hover:bg-white/20 rounded-full text-white transition-colors cursor-pointer"
-                title="Maravilha anterior"
-                aria-label="Anterior"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={handleNext}
-                className="p-1.5 hover:bg-white/20 rounded-full text-white transition-colors cursor-pointer"
-                title="Próxima maravilha"
-                aria-label="Seguinte"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* MODAL TRIGGER: VER TODAS */}
             <button
-              onClick={() => openModalWithWonder(currentWonder)}
-              className="bg-white/15 hover:bg-white/25 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-full border border-white/20 transition-colors cursor-pointer flex items-center gap-1.5"
+              onClick={handleNext}
+              className="p-1.5 hover:bg-white/20 rounded-full text-white transition-colors cursor-pointer"
+              title="Próxima maravilha"
+              aria-label="Seguinte"
             >
-              <Layers className="w-3.5 h-3.5 text-amber-300" />
-              <span className="hidden sm:inline">Ver as 7</span>
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
+
+          {/* MODAL TRIGGER: VER TODAS */}
+          <button
+            onClick={() => openModalWithWonder(currentWonder)}
+            className="bg-white/15 hover:bg-white/25 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-full border border-white/20 transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <Layers className="w-3.5 h-3.5 text-amber-300" />
+            <span className="hidden sm:inline">Ver as 7</span>
+          </button>
         </div>
 
         {/* MIDDLE / MAIN HERO CONTENT */}
         <div className="relative z-30 max-w-2xl my-auto py-6 sm:py-8">
-          {/* CURRENT ACTIVE WONDER DETAILS TAG */}
-          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-300 bg-amber-950/60 border border-amber-500/30 px-3 py-1 rounded-lg mb-3 backdrop-blur-sm shadow-xs">
-            <MapPin className="w-3.5 h-3.5 text-[#d9251d]" />
-            <span>{currentWonder.name} • {currentWonder.province}</span>
-          </div>
-
           <h2 className="text-2xl sm:text-4xl font-extrabold mb-3 leading-tight tracking-tight text-white drop-shadow-md">
             Descubra as 7 Maravilhas Naturais e o Turismo de Angola
           </h2>
