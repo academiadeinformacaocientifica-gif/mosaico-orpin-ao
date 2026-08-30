@@ -106,13 +106,6 @@ export const WondersPage: React.FC<WondersPageProps> = ({
             Início
           </button>
           <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
-          <button 
-            onClick={() => onNavigate('turismo')}
-            className="hover:text-[#d9251d] transition-colors cursor-pointer"
-          >
-            Turismo
-          </button>
-          <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
           <span className="text-stone-900 font-bold">As 7 Maravilhas de Angola</span>
         </div>
 
@@ -148,11 +141,6 @@ export const WondersPage: React.FC<WondersPageProps> = ({
         <div className="absolute inset-0 z-10 bg-gradient-to-r from-[#0f1115] via-[#0f1115]/90 to-transparent" />
 
         <div className="relative z-20 max-w-3xl space-y-4">
-          <div className="inline-flex items-center gap-2 bg-[#d9251d]/20 border border-[#d9251d]/40 text-[#ff4a42] text-xs font-bold px-3.5 py-1.5 rounded-full uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>Património Natural Oficial</span>
-          </div>
-
           <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
             As 7 Maravilhas Naturais de Angola
           </h1>

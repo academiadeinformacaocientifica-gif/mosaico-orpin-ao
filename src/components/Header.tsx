@@ -86,6 +86,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'history', label: 'História', icon: <Clock className="w-4 h-4" /> },
     { id: 'blog', label: 'Blog', icon: <FileText className="w-4 h-4" /> },
     { id: 'edicoes', label: 'Edições', icon: <BookMarked className="w-4 h-4" /> },
+    { id: 'maravilhas', label: '7 Maravilhas', icon: <Compass className="w-4 h-4" /> },
   ];
 
   const handleNavClick = (page: NavPage) => {

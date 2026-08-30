@@ -407,6 +407,11 @@ export default function App() {
       subtitle:
         'Agenda artística, mostras de cinema, exposições de artes plásticas, literatura e eventos musicais em Madrid, Barcelona e Luanda.',
     },
+    'turismo': {
+      title: 'Turismo',
+      subtitle:
+        'Notícias, reportagens, ecoturismo e eventos do setor turístico em Angola e no plano internacional.',
+    },
     'todas': {
       title: 'Todas as Publicações',
       subtitle:
@@ -566,13 +571,14 @@ export default function App() {
             {currentPage in categoryConfigs && (
               <CategoryPage
                 categoryId={currentPage as CategoryId}
-                title={categoryConfigs[currentPage as CategoryId].title}
-                subtitle={categoryConfigs[currentPage as CategoryId].subtitle}
+                title={categoryConfigs[currentPage as CategoryId]!.title}
+                subtitle={categoryConfigs[currentPage as CategoryId]!.subtitle}
                 articles={currentPage === 'todas' ? publicArticles : publicArticles.filter((a) => {
                   if (a.categoryId === currentPage) return true;
                   if (currentPage === 'politica' && (a.categoryId === 'analise-global' || a.category.toLowerCase().includes('politic') || a.category.toLowerCase().includes('análise'))) return true;
                   if (currentPage === 'economia' && (a.categoryId === 'economia' || a.category.toLowerCase().includes('economi'))) return true;
                   if (currentPage === 'kamba-cultura' && (a.categoryId === 'kamba-cultura' || a.category.toLowerCase().includes('kamba'))) return true;
+                  if (currentPage === 'turismo' && (a.categoryId === 'turismo' || a.category.toLowerCase().includes('turismo'))) return true;
                   return a.category.toLowerCase().includes(currentPage.replace('-', ' '));
                 })}
                 onOpenArticle={handleOpenArticle}
@@ -643,7 +649,7 @@ export default function App() {
             )}
 
             {/* AS 7 MARAVILHAS DE ANGOLA & GUIA TURÍSTICO */}
-            {(currentPage === 'turismo' || currentPage === 'maravilhas') && (
+            {currentPage === 'maravilhas' && (
               <WondersPage
                 onNavigate={handleNavigate}
                 articles={publicArticles}

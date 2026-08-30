@@ -76,7 +76,7 @@ export const WondersBanner: React.FC<WondersBannerProps> = ({ onNavigate }) => {
         {/* ACTION BUTTON */}
         <div className="flex items-center gap-3">
           <button
-            onClick={() => onNavigate('turismo')}
+            onClick={() => onNavigate('maravilhas')}
             className="bg-[#d9251d] hover:bg-[#b01b14] active:scale-95 text-white text-xs sm:text-sm font-bold px-6 py-3.5 rounded-xl flex items-center gap-2.5 transition-all cursor-pointer shadow-lg shadow-red-950/40 border border-red-500/30"
           >
             <Compass className="w-4 h-4" />
