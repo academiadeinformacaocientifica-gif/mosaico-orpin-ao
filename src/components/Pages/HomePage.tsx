@@ -14,6 +14,7 @@ import {
 import { Article, MagazineEdition, DiplomaticEvent, NavPage, GalleryItem } from '../../types';
 import { HeroCarousel } from '../HeroCarousel';
 import { ArticleCard } from '../ArticleCard';
+import { WondersBanner } from '../WondersBanner';
 
 interface HomePageProps {
   carouselArticles: Article[];
@@ -145,32 +146,8 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
-      {/* SHOWCASE BANNER: TURISMO & MARAVILHAS DE ANGOLA */}
-      <section className="bg-gradient-to-r from-[#111] via-[#1a1c23] to-[#2b1d14] rounded-2xl p-6 sm:p-10 text-white relative overflow-hidden shadow-lg border border-gray-800">
-        <div className="relative z-10 max-w-2xl">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-3 leading-snug">
-            Descubra as Maravilhas Naturais e a Riqueza Cultural de Angola
-          </h2>
-          <p className="text-stone-300 text-xs sm:text-sm leading-relaxed mb-6">
-            Com isenção e facilitação de vistos para cidadãos da União Europeia e Espanha, explore as Cascatas de Kalandula, o Deserto do Namibe e a lendária hospitalidade angolana.
-          </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => onNavigate('turismo')}
-              className="bg-[#d9251d] hover:bg-[#b01b14] text-white text-xs font-bold px-4 py-2.5 rounded-lg flex items-center gap-2 transition-colors cursor-pointer shadow-xs"
-            >
-              <Compass className="w-4 h-4" />
-              <span>Explorar Guia Turístico</span>
-            </button>
-            <button
-              onClick={() => onNavigate('videos')}
-              className="bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer border border-white/20"
-            >
-              Ver Vídeos Institucionais
-            </button>
-          </div>
-        </div>
-      </section>
+      {/* SHOWCASE BANNER: AS 7 MARAVILHAS NATURAIS & TURISMO DE ANGOLA COM SLIDES / TRANSIÇÃO */}
+      <WondersBanner onNavigate={onNavigate} />
 
       {/* SECTION: REVISTA MOSAICO - EDIÇÕES DIGITAIS */}
       <section className="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200/80 shadow-xs">
