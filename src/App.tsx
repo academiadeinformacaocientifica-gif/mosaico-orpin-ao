@@ -25,6 +25,7 @@ import { BlogPage } from './components/Pages/BlogPage';
 import { EditionsPage } from './components/Pages/EditionsPage';
 import { GalleryPage } from './components/Pages/GalleryPage';
 import { VideosPage } from './components/Pages/VideosPage';
+import { WondersPage } from './components/Pages/WondersPage';
 import { ArticleCard } from './components/ArticleCard';
 import { AdminGate } from './components/Admin/AdminGate';
 import { fetchArticles } from './lib/articleService';
@@ -357,6 +358,9 @@ export default function App() {
     setCurrentPage(page);
     setSelectedArticle(null);
     setSearchQuery('');
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const handleOpenArticle = (art: Article) => {
@@ -365,9 +369,8 @@ export default function App() {
     setSearchQuery('');
   };
 
-  const categoryConfigs: Record<
-    CategoryId,
-    { title: string; subtitle: string }
+  const categoryConfigs: Partial<
+    Record<CategoryId, { title: string; subtitle: string }>
   > = {
     'politica': {
       title: 'Politica',
@@ -403,11 +406,6 @@ export default function App() {
       title: 'Kultura 360',
       subtitle:
         'Agenda artística, mostras de cinema, exposições de artes plásticas, literatura e eventos musicais em Madrid, Barcelona e Luanda.',
-    },
-    'turismo': {
-      title: 'Turismo',
-      subtitle:
-        'Roteiros inesquecíveis, paisagens de cortar a respiração, ecoturismo e a isenção de vistos para viajantes.',
     },
     'todas': {
       title: 'Todas as Publicações',
@@ -642,6 +640,20 @@ export default function App() {
             {/* VÍDEOS */}
             {currentPage === 'videos' && (
               <VideosPage items={publicVideoItems} onShowToast={showToast} />
+            )}
+
+            {/* AS 7 MARAVILHAS DE ANGOLA & GUIA TURÍSTICO */}
+            {(currentPage === 'turismo' || currentPage === 'maravilhas') && (
+              <WondersPage
+                onNavigate={handleNavigate}
+                articles={publicArticles}
+                onOpenArticle={handleOpenArticle}
+                onToggleBookmark={handleToggleBookmark}
+                onToggleLike={handleToggleLike}
+                bookmarkedIds={bookmarkedIds}
+                likedIds={likedIds}
+                onShowToast={showToast}
+              />
             )}
           </>
         )}
