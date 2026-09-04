@@ -12,6 +12,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { Article, MagazineEdition, DiplomaticEvent, NavPage, GalleryItem } from '../../types';
+import { NaturalWonder } from '../../data/wondersData';
 import { HeroCarousel } from '../HeroCarousel';
 import { ArticleCard } from '../ArticleCard';
 import { WondersBanner } from '../WondersBanner';
@@ -23,6 +24,7 @@ interface HomePageProps {
   magazineEditions: MagazineEdition[];
   upcomingEvents: DiplomaticEvent[];
   galleryItems?: GalleryItem[];
+  wonders?: NaturalWonder[];
   onOpenArticle: (article: Article) => void;
   onOpenEdition: (edition: MagazineEdition) => void;
   onToggleBookmark: (articleId: string) => void;
@@ -39,6 +41,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   magazineEditions,
   upcomingEvents,
   galleryItems = [],
+  wonders,
   onOpenArticle,
   onOpenEdition,
   onToggleBookmark,
@@ -147,7 +150,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* SHOWCASE BANNER: AS 7 MARAVILHAS NATURAIS & TURISMO DE ANGOLA COM SLIDES / TRANSIÇÃO */}
-      <WondersBanner onNavigate={onNavigate} />
+      <WondersBanner wonders={wonders} onNavigate={onNavigate} />
 
       {/* SECTION: REVISTA MOSAICO - EDIÇÕES DIGITAIS */}
       <section className="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200/80 shadow-xs">

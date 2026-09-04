@@ -5,14 +5,16 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Compass } from 'lucide-react';
-import { angolaNaturalWonders } from '../data/wondersData';
+import { angolaNaturalWonders, NaturalWonder } from '../data/wondersData';
 import { NavPage } from '../types';
 
 interface WondersBannerProps {
   onNavigate: (page: NavPage) => void;
+  wonders?: NaturalWonder[];
 }
 
-export const WondersBanner: React.FC<WondersBannerProps> = ({ onNavigate }) => {
+export const WondersBanner: React.FC<WondersBannerProps> = ({ onNavigate, wonders }) => {
+  const activeWonders = wonders && wonders.length > 0 ? wonders : angolaNaturalWonders;
   const [currentIndex, setCurrentIndex] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -21,13 +23,13 @@ export const WondersBanner: React.FC<WondersBannerProps> = ({ onNavigate }) => {
   // Auto-advance slideshow seamlessly in the background (like a background video)
   useEffect(() => {
     timerRef.current = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % angolaNaturalWonders.length);
+      setCurrentIndex((prev) => (prev + 1) % activeWonders.length);
     }, DURATION_MS);
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, []);
+  }, [activeWonders.length]);
 
   return (
     <section 
@@ -36,7 +38,7 @@ export const WondersBanner: React.FC<WondersBannerProps> = ({ onNavigate }) => {
     >
       {/* BACKGROUND SLIDESHOW WITH CROSSFADE AND KEN BURNS EFFECT (VIDEO-LIKE TRANSITION) */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-stone-950">
-        {angolaNaturalWonders.map((wonder, idx) => {
+        {activeWonders.map((wonder, idx) => {
           const isActive = idx === currentIndex;
           return (
             <div

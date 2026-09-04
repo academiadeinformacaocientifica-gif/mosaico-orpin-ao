@@ -30,6 +30,7 @@ import { ArticleCard } from '../ArticleCard';
 interface WondersPageProps {
   onNavigate: (page: NavPage) => void;
   articles?: Article[];
+  wonders?: NaturalWonder[];
   onOpenArticle?: (article: Article) => void;
   onToggleBookmark?: (id: string) => void;
   onToggleLike?: (id: string) => void;
@@ -41,6 +42,7 @@ interface WondersPageProps {
 export const WondersPage: React.FC<WondersPageProps> = ({
   onNavigate,
   articles = [],
+  wonders,
   onOpenArticle,
   onToggleBookmark,
   onToggleLike,
@@ -48,6 +50,7 @@ export const WondersPage: React.FC<WondersPageProps> = ({
   likedIds = new Set(),
   onShowToast,
 }) => {
+  const activeWonders = wonders && wonders.length > 0 ? wonders : angolaNaturalWonders;
   const [activeWonderId, setActiveWonderId] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<{ src: string; title: string } | null>(null);
   const [expandedWonder, setExpandedWonder] = useState<Record<string, boolean>>({
@@ -187,7 +190,7 @@ export const WondersPage: React.FC<WondersPageProps> = ({
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-          {angolaNaturalWonders.map((wonder) => {
+          {activeWonders.map((wonder) => {
             const isCurrent = activeWonderId === wonder.id;
             return (
               <button
@@ -220,7 +223,7 @@ export const WondersPage: React.FC<WondersPageProps> = ({
 
       {/* APRESENTAÇÃO DETALHADA UMA A UMA */}
       <div className="space-y-12">
-        {angolaNaturalWonders.map((wonder) => {
+        {activeWonders.map((wonder) => {
           const isExpanded = expandedWonder[wonder.id] !== false;
 
           return (

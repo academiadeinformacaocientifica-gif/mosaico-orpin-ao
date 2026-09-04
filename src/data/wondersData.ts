@@ -24,6 +24,7 @@ export interface NaturalWonder {
   galleryImages: string[];
   highlights: string[];
   facts: WonderFact[];
+  isPublished?: boolean;
 }
 
 export const angolaNaturalWonders: NaturalWonder[] = [

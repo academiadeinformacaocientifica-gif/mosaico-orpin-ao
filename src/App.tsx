@@ -9,6 +9,7 @@ import { initialArticles } from './data/articles';
 import { initialGalleryItems } from './data/galleryData';
 import { initialVideoItems } from './data/videosData';
 import { initialMagazineEditions, magazineEditions } from './data/magazineEditions';
+import { angolaNaturalWonders, NaturalWonder } from './data/wondersData';
 import { upcomingEvents } from './data/events';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -33,6 +34,7 @@ import { fetchArticles } from './lib/articleService';
 import { fetchGalleryItems, getLocalGallery } from './lib/galleryService';
 import { fetchVideoItems, getLocalVideos } from './lib/videoService';
 import { fetchMagazineEditions, getLocalEditions } from './lib/editionService';
+import { fetchNaturalWonders, getLocalWonders } from './lib/wonderService';
 import { isSupabaseConfigured } from './lib/supabase';
 import { Search, X, FolderSearch } from 'lucide-react';
 
@@ -79,6 +81,16 @@ export default function App() {
       }
     }
     return initialMagazineEditions;
+  });
+  const [naturalWondersList, setNaturalWondersList] = useState<NaturalWonder[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return getLocalWonders();
+      } catch {
+        // fallback
+      }
+    }
+    return angolaNaturalWonders;
   });
   const [articlesLoading, setArticlesLoading] = useState(isSupabaseConfigured);
   const [articlesError, setArticlesError] = useState<string | null>(null);
@@ -128,12 +140,28 @@ export default function App() {
     }
   }, []);
 
+  const loadWondersFromBackend = useCallback(async () => {
+    try {
+      const items = await fetchNaturalWonders();
+      setNaturalWondersList(items);
+    } catch (err) {
+      console.error('Erro ao carregar maravilhas de Angola:', err);
+    }
+  }, []);
+
   useEffect(() => {
     loadArticlesFromBackend();
     loadGalleryFromBackend();
     loadVideosFromBackend();
     loadEditionsFromBackend();
-  }, [loadArticlesFromBackend, loadGalleryFromBackend, loadVideosFromBackend, loadEditionsFromBackend]);
+    loadWondersFromBackend();
+  }, [
+    loadArticlesFromBackend,
+    loadGalleryFromBackend,
+    loadVideosFromBackend,
+    loadEditionsFromBackend,
+    loadWondersFromBackend,
+  ]);
 
   useEffect(() => {
     const handleUrlChange = () => {
@@ -472,6 +500,11 @@ export default function App() {
     [magazineEditionsList]
   );
 
+  const publicNaturalWonders = useMemo(
+    () => naturalWondersList.filter((w) => w.isPublished !== false),
+    [naturalWondersList]
+  );
+
   if (currentPage === 'admin') {
     return (
       <AdminGate
@@ -479,12 +512,14 @@ export default function App() {
         galleryItems={galleryItems}
         videoItems={videoItems}
         magazineEditions={magazineEditionsList}
+        naturalWonders={naturalWondersList}
         articlesLoading={articlesLoading}
         articlesError={articlesError}
         onArticlesChanged={loadArticlesFromBackend}
         onGalleryChanged={loadGalleryFromBackend}
         onVideosChanged={loadVideosFromBackend}
         onEditionsChanged={loadEditionsFromBackend}
+        onWondersChanged={loadWondersFromBackend}
         onGoToSite={() => handleNavigate('home')}
         onShowToast={showToast}
       />
@@ -582,6 +617,7 @@ export default function App() {
                 magazineEditions={publicMagazineEditions}
                 upcomingEvents={upcomingEvents}
                 galleryItems={publicGalleryItems}
+                wonders={publicNaturalWonders}
                 onOpenArticle={handleOpenArticle}
                 onOpenEdition={setSelectedEdition}
                 onToggleBookmark={handleToggleBookmark}
@@ -688,6 +724,7 @@ export default function App() {
             {/* AS 7 MARAVILHAS DE ANGOLA & GUIA TURÍSTICO */}
             {currentPage === 'maravilhas' && (
               <WondersPage
+                wonders={publicNaturalWonders}
                 onNavigate={handleNavigate}
                 articles={publicArticles}
                 onOpenArticle={handleOpenArticle}
