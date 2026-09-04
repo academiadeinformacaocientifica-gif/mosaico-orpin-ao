@@ -30,8 +30,8 @@ import { ConsularServicesPage } from './components/Pages/ConsularServicesPage';
 import { ArticleCard } from './components/ArticleCard';
 import { AdminGate } from './components/Admin/AdminGate';
 import { fetchArticles } from './lib/articleService';
-import { fetchGalleryItems } from './lib/galleryService';
-import { fetchVideoItems } from './lib/videoService';
+import { fetchGalleryItems, getLocalGallery } from './lib/galleryService';
+import { fetchVideoItems, getLocalVideos } from './lib/videoService';
 import { fetchMagazineEditions, getLocalEditions } from './lib/editionService';
 import { isSupabaseConfigured } from './lib/supabase';
 import { Search, X, FolderSearch } from 'lucide-react';
@@ -50,8 +50,26 @@ function getInitialPage(): NavPage {
 export default function App() {
   const [currentPage, setCurrentPage] = useState<NavPage>(getInitialPage);
   const [articles, setArticles] = useState<Article[]>(initialArticles);
-  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(initialGalleryItems);
-  const [videoItems, setVideoItems] = useState<VideoItem[]>(initialVideoItems);
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return getLocalGallery();
+      } catch {
+        // fallback
+      }
+    }
+    return initialGalleryItems;
+  });
+  const [videoItems, setVideoItems] = useState<VideoItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return getLocalVideos();
+      } catch {
+        // fallback
+      }
+    }
+    return initialVideoItems;
+  });
   const [magazineEditionsList, setMagazineEditionsList] = useState<MagazineEdition[]>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -86,7 +104,7 @@ export default function App() {
   const loadGalleryFromBackend = useCallback(async () => {
     try {
       const items = await fetchGalleryItems();
-      setGalleryItems(items.length > 0 ? items : initialGalleryItems);
+      setGalleryItems(items);
     } catch (err) {
       console.error('Erro ao carregar galeria:', err);
     }
@@ -95,7 +113,7 @@ export default function App() {
   const loadVideosFromBackend = useCallback(async () => {
     try {
       const items = await fetchVideoItems();
-      setVideoItems(items.length > 0 ? items : initialVideoItems);
+      setVideoItems(items);
     } catch (err) {
       console.error('Erro ao carregar vídeos:', err);
     }

@@ -9,6 +9,44 @@ import { initialGalleryItems } from '../data/galleryData';
 import { uploadArticleImage } from './articleService';
 
 const LOCAL_STORAGE_KEY = 'mosaico_gallery_items_v1';
+const DELETED_GALLERY_KEY = 'mosaico_deleted_gallery_v1';
+
+function getDeletedGalleryIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DELETED_GALLERY_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) {
+        return new Set(arr.map(String));
+      }
+    }
+  } catch (e) {
+    console.error('Error reading deleted gallery ids:', e);
+  }
+  return new Set<string>();
+}
+
+function markGalleryAsDeleted(id: string): void {
+  try {
+    const ids = getDeletedGalleryIds();
+    ids.add(id);
+    localStorage.setItem(DELETED_GALLERY_KEY, JSON.stringify(Array.from(ids)));
+  } catch (e) {
+    console.error('Error marking gallery as deleted:', e);
+  }
+}
+
+function unmarkGalleryAsDeleted(id: string): void {
+  try {
+    const ids = getDeletedGalleryIds();
+    if (ids.has(id)) {
+      ids.delete(id);
+      localStorage.setItem(DELETED_GALLERY_KEY, JSON.stringify(Array.from(ids)));
+    }
+  } catch (e) {
+    console.error('Error unmarking gallery as deleted:', e);
+  }
+}
 
 interface GalleryRow {
   id: string;
@@ -54,27 +92,42 @@ function galleryItemToRow(item: GalleryInput) {
   };
 }
 
-function getLocalGallery(): GalleryItem[] {
+export function getLocalGallery(): GalleryItem[] {
+  const deletedIds = getDeletedGalleryIds();
+  const filterOutDeleted = (items: GalleryItem[]): GalleryItem[] => {
+    return items.filter((item) => !deletedIds.has(item.id));
+  };
+
   try {
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (saved) {
-      return JSON.parse(saved);
+    if (saved !== null) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        return filterOutDeleted(parsed);
+      }
     }
   } catch (err) {
     console.error('Error loading local gallery:', err);
   }
-  return initialGalleryItems;
+  return filterOutDeleted(initialGalleryItems);
 }
 
-function saveLocalGallery(items: GalleryItem[]): void {
+export function saveLocalGallery(items: GalleryItem[]): void {
   try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
+    const deletedIds = getDeletedGalleryIds();
+    const cleanItems = items.filter((item) => !deletedIds.has(item.id));
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cleanItems));
   } catch (err) {
     console.error('Error saving local gallery:', err);
   }
 }
 
 export async function fetchGalleryItems(): Promise<GalleryItem[]> {
+  const deletedIds = getDeletedGalleryIds();
+  const filterOutDeleted = (items: GalleryItem[]): GalleryItem[] => {
+    return items.filter((item) => !deletedIds.has(item.id));
+  };
+
   if (!isSupabaseConfigured) {
     return getLocalGallery();
   }
@@ -101,15 +154,25 @@ export async function fetchGalleryItems(): Promise<GalleryItem[]> {
     return getLocalGallery();
   }
 
-  return (data as GalleryRow[]).map(rowToGalleryItem);
+  const fromDb = (data as GalleryRow[]).map(rowToGalleryItem);
+  const validFromDb = filterOutDeleted(fromDb);
+  saveLocalGallery(validFromDb);
+  return validFromDb;
 }
 
 export async function createGalleryItem(input: GalleryInput): Promise<GalleryItem> {
   const isPublished = input.isPublished !== false;
+  const newId = `gal-${Date.now()}`;
+
+  // Se o id foi marcado como apagado anteriormente, remove da blacklist
+  unmarkGalleryAsDeleted(newId);
 
   if (isSupabaseConfigured) {
     try {
-      const row = galleryItemToRow(input);
+      const row = {
+        id: newId,
+        ...galleryItemToRow(input),
+      };
       let { data, error } = await supabase
         .from('gallery_items')
         .insert(row)
@@ -127,11 +190,24 @@ export async function createGalleryItem(input: GalleryInput): Promise<GalleryIte
         error = retryResult.error;
       }
 
+      // Se der erro por passar id explícito, tenta sem passar id
+      if (error && (error.message?.includes('id') || error.code === '42703')) {
+        const { id: _id, ...rowWithoutId } = row;
+        const retryResult = await supabase
+          .from('gallery_items')
+          .insert(rowWithoutId)
+          .select()
+          .single();
+        data = retryResult.data;
+        error = retryResult.error;
+      }
+
       if (!error && data) {
         const item = rowToGalleryItem(data as GalleryRow);
-        // Also update local
+        unmarkGalleryAsDeleted(item.id);
         const current = getLocalGallery();
-        saveLocalGallery([item, ...current]);
+        const updated = [item, ...current.filter((i) => i.id !== item.id)];
+        saveLocalGallery(updated);
         return item;
       }
     } catch (e) {
@@ -141,7 +217,7 @@ export async function createGalleryItem(input: GalleryInput): Promise<GalleryIte
 
   // Local fallback
   const newItem: GalleryItem = {
-    id: `gal-${Date.now()}`,
+    id: newId,
     title: input.title,
     category: input.category,
     date: input.date,
@@ -151,13 +227,14 @@ export async function createGalleryItem(input: GalleryInput): Promise<GalleryIte
   };
 
   const current = getLocalGallery();
-  const updated = [newItem, ...current];
+  const updated = [newItem, ...current.filter((i) => i.id !== newId)];
   saveLocalGallery(updated);
   return newItem;
 }
 
 export async function updateGalleryItem(id: string, input: GalleryInput): Promise<GalleryItem> {
   const isPublished = input.isPublished !== false;
+  unmarkGalleryAsDeleted(id);
 
   if (isSupabaseConfigured) {
     try {
@@ -211,16 +288,25 @@ export async function updateGalleryItem(id: string, input: GalleryInput): Promis
 }
 
 export async function deleteGalleryItem(id: string): Promise<void> {
+  // 1. Marca imediatamente como eliminado na blacklist do browser
+  markGalleryAsDeleted(id);
+
+  // 2. Remove imediatamente do armazenamento local
+  const current = getLocalGallery();
+  const next = current.filter((i) => i.id !== id);
+  saveLocalGallery(next);
+
+  // 3. Executa eliminação no Supabase se configurado
   if (isSupabaseConfigured) {
     try {
-      await supabase.from('gallery_items').delete().eq('id', id);
+      const { error } = await supabase.from('gallery_items').delete().eq('id', id);
+      if (error) {
+        console.warn('[Mosaico] Aviso ao eliminar galeria no Supabase:', error.message || error);
+      }
     } catch (e) {
       console.warn('Error deleting gallery item on Supabase:', e);
     }
   }
-  const current = getLocalGallery();
-  const next = current.filter((i) => i.id !== id);
-  saveLocalGallery(next);
 }
 
 export { uploadArticleImage as uploadGalleryImage };

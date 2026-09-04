@@ -8,6 +8,44 @@ import { VideoItem } from '../types';
 import { initialVideoItems } from '../data/videosData';
 
 const LOCAL_STORAGE_KEY = 'mosaico_video_items_v1';
+const DELETED_VIDEOS_KEY = 'mosaico_deleted_videos_v1';
+
+function getDeletedVideoIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DELETED_VIDEOS_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) {
+        return new Set(arr.map(String));
+      }
+    }
+  } catch (e) {
+    console.error('Error reading deleted video ids:', e);
+  }
+  return new Set<string>();
+}
+
+function markVideoAsDeleted(id: string): void {
+  try {
+    const ids = getDeletedVideoIds();
+    ids.add(id);
+    localStorage.setItem(DELETED_VIDEOS_KEY, JSON.stringify(Array.from(ids)));
+  } catch (e) {
+    console.error('Error marking video as deleted:', e);
+  }
+}
+
+function unmarkVideoAsDeleted(id: string): void {
+  try {
+    const ids = getDeletedVideoIds();
+    if (ids.has(id)) {
+      ids.delete(id);
+      localStorage.setItem(DELETED_VIDEOS_KEY, JSON.stringify(Array.from(ids)));
+    }
+  } catch (e) {
+    console.error('Error unmarking video as deleted:', e);
+  }
+}
 
 interface VideoRow {
   id: string;
@@ -65,27 +103,42 @@ function videoItemToRow(item: VideoInput) {
   };
 }
 
-function getLocalVideos(): VideoItem[] {
+export function getLocalVideos(): VideoItem[] {
+  const deletedIds = getDeletedVideoIds();
+  const filterOutDeleted = (items: VideoItem[]): VideoItem[] => {
+    return items.filter((item) => !deletedIds.has(item.id));
+  };
+
   try {
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (saved) {
-      return JSON.parse(saved);
+    if (saved !== null) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        return filterOutDeleted(parsed);
+      }
     }
   } catch (err) {
     console.error('Error loading local videos:', err);
   }
-  return initialVideoItems;
+  return filterOutDeleted(initialVideoItems);
 }
 
-function saveLocalVideos(items: VideoItem[]): void {
+export function saveLocalVideos(items: VideoItem[]): void {
   try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
+    const deletedIds = getDeletedVideoIds();
+    const cleanItems = items.filter((item) => !deletedIds.has(item.id));
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cleanItems));
   } catch (err) {
     console.error('Error saving local videos:', err);
   }
 }
 
 export async function fetchVideoItems(): Promise<VideoItem[]> {
+  const deletedIds = getDeletedVideoIds();
+  const filterOutDeleted = (items: VideoItem[]): VideoItem[] => {
+    return items.filter((item) => !deletedIds.has(item.id));
+  };
+
   if (!isSupabaseConfigured) {
     return getLocalVideos();
   }
@@ -111,15 +164,25 @@ export async function fetchVideoItems(): Promise<VideoItem[]> {
     return getLocalVideos();
   }
 
-  return (data as VideoRow[]).map(rowToVideoItem);
+  const fromDb = (data as VideoRow[]).map(rowToVideoItem);
+  const validFromDb = filterOutDeleted(fromDb);
+  saveLocalVideos(validFromDb);
+  return validFromDb;
 }
 
 export async function createVideoItem(input: VideoInput): Promise<VideoItem> {
   const isPublished = input.isPublished !== false;
+  const newId = `vid-${Date.now()}`;
+
+  // Se o id foi marcado como apagado anteriormente, remove da blacklist
+  unmarkVideoAsDeleted(newId);
 
   if (isSupabaseConfigured) {
     try {
-      const row = videoItemToRow(input);
+      const row = {
+        id: newId,
+        ...videoItemToRow(input),
+      };
       let { data, error } = await supabase
         .from('video_items')
         .insert(row)
@@ -137,10 +200,24 @@ export async function createVideoItem(input: VideoInput): Promise<VideoItem> {
         error = retryResult.error;
       }
 
+      // Se der erro por passar id explícito, tenta sem passar id
+      if (error && (error.message?.includes('id') || error.code === '42703')) {
+        const { id: _id, ...rowWithoutId } = row;
+        const retryResult = await supabase
+          .from('video_items')
+          .insert(rowWithoutId)
+          .select()
+          .single();
+        data = retryResult.data;
+        error = retryResult.error;
+      }
+
       if (!error && data) {
         const item = rowToVideoItem(data as VideoRow);
+        unmarkVideoAsDeleted(item.id);
         const current = getLocalVideos();
-        saveLocalVideos([item, ...current]);
+        const updated = [item, ...current.filter((i) => i.id !== item.id)];
+        saveLocalVideos(updated);
         return item;
       }
     } catch (e) {
@@ -150,7 +227,7 @@ export async function createVideoItem(input: VideoInput): Promise<VideoItem> {
 
   // Local fallback
   const newItem: VideoItem = {
-    id: `vid-${Date.now()}`,
+    id: newId,
     title: input.title,
     category: input.category,
     duration: input.duration || '10:00',
@@ -163,13 +240,14 @@ export async function createVideoItem(input: VideoInput): Promise<VideoItem> {
   };
 
   const current = getLocalVideos();
-  const updated = [newItem, ...current];
+  const updated = [newItem, ...current.filter((i) => i.id !== newId)];
   saveLocalVideos(updated);
   return newItem;
 }
 
 export async function updateVideoItem(id: string, input: VideoInput): Promise<VideoItem> {
   const isPublished = input.isPublished !== false;
+  unmarkVideoAsDeleted(id);
 
   if (isSupabaseConfigured) {
     try {
@@ -226,14 +304,23 @@ export async function updateVideoItem(id: string, input: VideoInput): Promise<Vi
 }
 
 export async function deleteVideoItem(id: string): Promise<void> {
+  // 1. Marca imediatamente como eliminado na blacklist do browser
+  markVideoAsDeleted(id);
+
+  // 2. Remove imediatamente do armazenamento local
+  const current = getLocalVideos();
+  const next = current.filter((i) => i.id !== id);
+  saveLocalVideos(next);
+
+  // 3. Executa eliminação no Supabase se configurado
   if (isSupabaseConfigured) {
     try {
-      await supabase.from('video_items').delete().eq('id', id);
+      const { error } = await supabase.from('video_items').delete().eq('id', id);
+      if (error) {
+        console.warn('[Mosaico] Aviso ao eliminar vídeo no Supabase:', error.message || error);
+      }
     } catch (e) {
       console.warn('Error deleting video item on Supabase:', e);
     }
   }
-  const current = getLocalVideos();
-  const next = current.filter((i) => i.id !== id);
-  saveLocalVideos(next);
 }
