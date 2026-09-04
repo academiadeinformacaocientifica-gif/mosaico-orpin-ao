@@ -9,6 +9,69 @@ import { initialMagazineEditions } from '../data/magazineEditions';
 import { uploadArticleImage } from './articleService';
 
 const LOCAL_STORAGE_KEY = 'mosaico_magazine_editions_v1';
+const DELETED_EDITIONS_KEY = 'mosaico_deleted_editions_v1';
+const DELETED_NUMBERS_KEY = 'mosaico_deleted_edition_numbers_v1';
+
+export function getDeletedEditionIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DELETED_EDITIONS_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr);
+    }
+  } catch (e) {
+    console.error('Error reading deleted edition ids:', e);
+  }
+  return new Set();
+}
+
+export function getDeletedEditionNumbers(): Set<number> {
+  try {
+    const raw = localStorage.getItem(DELETED_NUMBERS_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr.map(Number));
+    }
+  } catch (e) {
+    console.error('Error reading deleted edition numbers:', e);
+  }
+  return new Set();
+}
+
+function markEditionAsDeleted(id: string, editionNumber?: number): void {
+  try {
+    const ids = getDeletedEditionIds();
+    ids.add(id);
+    localStorage.setItem(DELETED_EDITIONS_KEY, JSON.stringify(Array.from(ids)));
+
+    if (typeof editionNumber === 'number' && !isNaN(editionNumber)) {
+      const nums = getDeletedEditionNumbers();
+      nums.add(editionNumber);
+      localStorage.setItem(DELETED_NUMBERS_KEY, JSON.stringify(Array.from(nums)));
+    }
+  } catch (e) {
+    console.error('Error marking edition as deleted:', e);
+  }
+}
+
+function unmarkEditionAsDeleted(id: string, editionNumber?: number): void {
+  try {
+    const ids = getDeletedEditionIds();
+    if (ids.has(id)) {
+      ids.delete(id);
+      localStorage.setItem(DELETED_EDITIONS_KEY, JSON.stringify(Array.from(ids)));
+    }
+    if (typeof editionNumber === 'number' && !isNaN(editionNumber)) {
+      const nums = getDeletedEditionNumbers();
+      if (nums.has(editionNumber)) {
+        nums.delete(editionNumber);
+        localStorage.setItem(DELETED_NUMBERS_KEY, JSON.stringify(Array.from(nums)));
+      }
+    }
+  } catch (e) {
+    console.error('Error unmarking edition as deleted:', e);
+  }
+}
 
 interface EditionRow {
   id: string;
@@ -74,27 +137,53 @@ function editionToRow(item: MagazineEditionInput) {
   };
 }
 
-function getLocalEditions(): MagazineEdition[] {
+export function getLocalEditions(): MagazineEdition[] {
+  const deletedIds = getDeletedEditionIds();
+  const deletedNums = getDeletedEditionNumbers();
+
+  const filterOutDeleted = (items: MagazineEdition[]): MagazineEdition[] => {
+    return items.filter(
+      (item) => !deletedIds.has(item.id) && (item.editionNumber === undefined || !deletedNums.has(item.editionNumber))
+    );
+  };
+
   try {
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (saved) {
-      return JSON.parse(saved);
+    if (saved !== null) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        return filterOutDeleted(parsed);
+      }
     }
   } catch (err) {
     console.error('Error loading local magazine editions:', err);
   }
-  return initialMagazineEditions;
+  return filterOutDeleted(initialMagazineEditions);
 }
 
-function saveLocalEditions(items: MagazineEdition[]): void {
+export function saveLocalEditions(items: MagazineEdition[]): void {
   try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
+    const deletedIds = getDeletedEditionIds();
+    const deletedNums = getDeletedEditionNumbers();
+    const cleanItems = items.filter(
+      (item) => !deletedIds.has(item.id) && (item.editionNumber === undefined || !deletedNums.has(item.editionNumber))
+    );
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cleanItems));
   } catch (err) {
     console.error('Error saving local magazine editions:', err);
   }
 }
 
 export async function fetchMagazineEditions(): Promise<MagazineEdition[]> {
+  const deletedIds = getDeletedEditionIds();
+  const deletedNums = getDeletedEditionNumbers();
+
+  const filterOutDeleted = (items: MagazineEdition[]): MagazineEdition[] => {
+    return items.filter(
+      (item) => !deletedIds.has(item.id) && (item.editionNumber === undefined || !deletedNums.has(item.editionNumber))
+    );
+  };
+
   if (!isSupabaseConfigured) {
     return getLocalEditions();
   }
@@ -121,7 +210,11 @@ export async function fetchMagazineEditions(): Promise<MagazineEdition[]> {
       return getLocalEditions();
     }
 
-    return (data as EditionRow[]).map(rowToEdition);
+    const fromDb = (data as EditionRow[]).map(rowToEdition);
+    const validFromDb = filterOutDeleted(fromDb);
+    // Keep local cache in sync so initial load on refresh is instantaneous
+    saveLocalEditions(validFromDb);
+    return validFromDb;
   } catch (err) {
     console.warn('Erro ao conectar ao Supabase para edições:', err);
     return getLocalEditions();
@@ -130,10 +223,17 @@ export async function fetchMagazineEditions(): Promise<MagazineEdition[]> {
 
 export async function createMagazineEdition(input: MagazineEditionInput): Promise<MagazineEdition> {
   const isPublished = input.isPublished !== false;
+  const newId = `ed-${input.editionNumber}-${Date.now()}`;
+
+  // Se o número ou id foi apagado anteriormente, remove da lista negra para permitir recriação
+  unmarkEditionAsDeleted(newId, input.editionNumber);
 
   if (isSupabaseConfigured) {
     try {
-      const row = editionToRow(input);
+      const row = {
+        id: newId,
+        ...editionToRow(input),
+      };
       let { data, error } = await supabase
         .from('magazine_editions')
         .insert([row])
@@ -151,10 +251,22 @@ export async function createMagazineEdition(input: MagazineEditionInput): Promis
         error = retryResult.error;
       }
 
+      // Se der erro de coluna 'id', tenta sem passar id explícito
+      if (error && (error.message?.includes('id') || error.code === '42703')) {
+        const { id: _id, ...rowWithoutId } = row;
+        const retryResult = await supabase
+          .from('magazine_editions')
+          .insert([rowWithoutId])
+          .select()
+          .single();
+        data = retryResult.data;
+        error = retryResult.error;
+      }
+
       if (!error && data) {
         const newEdition = rowToEdition(data as EditionRow);
         const current = getLocalEditions();
-        const updated = [newEdition, ...current];
+        const updated = [newEdition, ...current.filter((i) => i.id !== newEdition.id)];
         saveLocalEditions(updated);
         return newEdition;
       }
@@ -165,7 +277,7 @@ export async function createMagazineEdition(input: MagazineEditionInput): Promis
 
   // Local fallback
   const newEdition: MagazineEdition = {
-    id: 'ed-' + Date.now(),
+    id: newId,
     editionNumber: input.editionNumber,
     title: input.title,
     theme: input.theme,
@@ -180,13 +292,16 @@ export async function createMagazineEdition(input: MagazineEditionInput): Promis
   };
 
   const current = getLocalEditions();
-  const updated = [newEdition, ...current];
+  const updated = [newEdition, ...current.filter((i) => i.id !== newId)];
   saveLocalEditions(updated);
   return newEdition;
 }
 
 export async function updateMagazineEdition(id: string, input: MagazineEditionInput): Promise<MagazineEdition> {
   const isPublished = input.isPublished !== false;
+
+  // Garante que a edição editada não conste como apagada
+  unmarkEditionAsDeleted(id, input.editionNumber);
 
   if (isSupabaseConfigured) {
     try {
@@ -244,17 +359,45 @@ export async function updateMagazineEdition(id: string, input: MagazineEditionIn
   return updatedEdition;
 }
 
-export async function deleteMagazineEdition(id: string): Promise<void> {
+export async function deleteMagazineEdition(id: string, editionNumber?: number): Promise<void> {
+  // 1. Marca imediatamente como eliminado na lista negra permanente do browser
+  markEditionAsDeleted(id, editionNumber);
+
+  // 2. Remove imediatamente do armazenamento local para que recarregamentos não mostrem o item
+  const current = getLocalEditions();
+  const next = current.filter(
+    (i) => i.id !== id && (editionNumber === undefined || i.editionNumber !== editionNumber)
+  );
+  saveLocalEditions(next);
+
+  // 3. Executa a eliminação no Supabase (se configurado)
   if (isSupabaseConfigured) {
     try {
-      await supabase.from('magazine_editions').delete().eq('id', id);
+      // Tentativa de remoção pelo campo 'id'
+      const { error: idError } = await supabase
+        .from('magazine_editions')
+        .delete()
+        .eq('id', id);
+
+      if (idError) {
+        console.warn('[Mosaico] Aviso ao eliminar edição por ID no Supabase:', idError.message || idError);
+      }
+
+      // Tentativa complementar pelo número da edição se fornecido
+      if (typeof editionNumber === 'number' && !isNaN(editionNumber)) {
+        const { error: numError } = await supabase
+          .from('magazine_editions')
+          .delete()
+          .eq('edition_number', editionNumber);
+
+        if (numError && !idError) {
+          console.warn('[Mosaico] Aviso ao eliminar por edition_number no Supabase:', numError.message || numError);
+        }
+      }
     } catch (e) {
-      console.warn('Error deleting magazine edition on Supabase:', e);
+      console.warn('Erro ao comunicar remoção de edição ao Supabase:', e);
     }
   }
-  const current = getLocalEditions();
-  const next = current.filter((i) => i.id !== id);
-  saveLocalEditions(next);
 }
 
 export { uploadArticleImage as uploadMagazineCover };

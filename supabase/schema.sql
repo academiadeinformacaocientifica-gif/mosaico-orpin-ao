@@ -201,3 +201,48 @@ create policy "Remoção de vídeos"
   on public.video_items for delete
   using (true);
 
+-- 7. TABELA DE EDIÇÕES DA REVISTA MOSAICO ------------------------------------
+create table if not exists public.magazine_editions (
+  id             text primary key,
+  edition_number integer not null,
+  title          text not null,
+  theme          text not null default '',
+  period         text not null default '',
+  year           integer not null default 2026,
+  cover_image    text not null,
+  pdf_url        text,
+  pages_count    integer not null default 48,
+  highlights     text[] not null default '{}',
+  editorial_note text not null default '',
+  is_published   boolean not null default true,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+
+alter table public.magazine_editions add column if not exists is_published boolean not null default true;
+alter table public.magazine_editions enable row level security;
+
+drop policy if exists "Leitura pública de edições" on public.magazine_editions;
+create policy "Leitura pública de edições"
+  on public.magazine_editions for select
+  using (true);
+
+drop policy if exists "Inserção de edições" on public.magazine_editions;
+create policy "Inserção de edições"
+  on public.magazine_editions for insert
+  with check (true);
+
+drop policy if exists "Atualização de edições" on public.magazine_editions;
+create policy "Atualização de edições"
+  on public.magazine_editions for update
+  using (true)
+  with check (true);
+
+drop policy if exists "Remoção de edições" on public.magazine_editions;
+create policy "Remoção de edições"
+  on public.magazine_editions for delete
+  using (true);
+
+create index if not exists idx_magazine_editions_number on public.magazine_editions(edition_number desc);
+create index if not exists idx_magazine_editions_published on public.magazine_editions(is_published);
+

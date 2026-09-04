@@ -14,7 +14,7 @@ export const EditionsPage: React.FC<EditionsPageProps> = ({
   onOpenEdition,
   onShowToast,
 }) => {
-  const displayEditions = (editions && editions.length > 0 ? editions : initialMagazineEditions)
+  const displayEditions = (editions !== undefined ? editions : initialMagazineEditions)
     .filter((e) => e.isPublished !== false)
     .sort((a, b) => (b.editionNumber || 0) - (a.editionNumber || 0));
 

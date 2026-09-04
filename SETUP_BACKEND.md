@@ -13,7 +13,9 @@ O portal possui uma área reservada (`/admin` ou clicando em **Área Reservada**
 > **O que o script cria:**
 > - A tabela `public.admin_users` para armazenamento de contas e perfis de redação (com palavra-passe encriptada).
 > - A tabela `public.articles` para as notícias e publicações.
-> - O bucket de armazenamento `article-images` para uploads de capas de artigos.
+> - A tabela `public.magazine_editions` para as edições da Revista Mosaico (criação, edição e eliminação).
+> - As tabelas `public.gallery_items` e `public.video_items` para a multimédia do portal.
+> - O bucket de armazenamento `article-images` para uploads de capas de artigos e revistas.
 > - Todas as políticas de acesso e segurança (RLS).
 
 ---

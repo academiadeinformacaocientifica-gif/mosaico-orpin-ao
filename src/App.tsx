@@ -26,12 +26,13 @@ import { EditionsPage } from './components/Pages/EditionsPage';
 import { GalleryPage } from './components/Pages/GalleryPage';
 import { VideosPage } from './components/Pages/VideosPage';
 import { WondersPage } from './components/Pages/WondersPage';
+import { ConsularServicesPage } from './components/Pages/ConsularServicesPage';
 import { ArticleCard } from './components/ArticleCard';
 import { AdminGate } from './components/Admin/AdminGate';
 import { fetchArticles } from './lib/articleService';
 import { fetchGalleryItems } from './lib/galleryService';
 import { fetchVideoItems } from './lib/videoService';
-import { fetchMagazineEditions } from './lib/editionService';
+import { fetchMagazineEditions, getLocalEditions } from './lib/editionService';
 import { isSupabaseConfigured } from './lib/supabase';
 import { Search, X, FolderSearch } from 'lucide-react';
 
@@ -51,7 +52,16 @@ export default function App() {
   const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(initialGalleryItems);
   const [videoItems, setVideoItems] = useState<VideoItem[]>(initialVideoItems);
-  const [magazineEditionsList, setMagazineEditionsList] = useState<MagazineEdition[]>(initialMagazineEditions);
+  const [magazineEditionsList, setMagazineEditionsList] = useState<MagazineEdition[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return getLocalEditions();
+      } catch {
+        // fallback
+      }
+    }
+    return initialMagazineEditions;
+  });
   const [articlesLoading, setArticlesLoading] = useState(isSupabaseConfigured);
   const [articlesError, setArticlesError] = useState<string | null>(null);
 
@@ -94,7 +104,7 @@ export default function App() {
   const loadEditionsFromBackend = useCallback(async () => {
     try {
       const items = await fetchMagazineEditions();
-      setMagazineEditionsList(items.length > 0 ? items : initialMagazineEditions);
+      setMagazineEditionsList(items);
     } catch (err) {
       console.error('Erro ao carregar edições da revista:', err);
     }
@@ -567,8 +577,17 @@ export default function App() {
             {/* SOBRE A EMBAIXADA */}
             {currentPage === 'sobre' && <AboutPage onShowToast={showToast} />}
 
+            {/* SERVIÇOS CONSULARES E DOCUMENTAÇÃO */}
+            {currentPage === 'panorama-consular' && (
+              <ConsularServicesPage
+                articles={publicArticles}
+                onOpenArticle={handleOpenArticle}
+                onShowToast={showToast}
+              />
+            )}
+
             {/* CATEGORY PAGES */}
-            {currentPage in categoryConfigs && (
+            {currentPage in categoryConfigs && currentPage !== 'panorama-consular' && (
               <CategoryPage
                 categoryId={currentPage as CategoryId}
                 title={categoryConfigs[currentPage as CategoryId]!.title}

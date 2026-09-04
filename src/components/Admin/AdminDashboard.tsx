@@ -388,7 +388,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleDeleteEdition = async (id: string) => {
     setDeletingId(id);
     try {
-      await deleteMagazineEdition(id);
+      const edition = magazineEditions.find((e) => e.id === id);
+      await deleteMagazineEdition(id, edition?.editionNumber);
       onShowToast('Edição da revista removida com sucesso.');
       onEditionsChanged();
     } catch (err) {
