@@ -244,7 +244,7 @@ export const ArticlePage: React.FC<ArticlePageProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-medium bg-gray-50 px-3.5 py-2 rounded-xl border border-gray-200">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs font-medium bg-gray-50 px-3.5 py-2 rounded-xl border border-gray-200">
             <div className="flex items-center gap-1.5">
               <Calendar className="w-4 h-4 text-[#d9251d]" />
               <span>{article.date}</span>
@@ -254,6 +254,15 @@ export const ArticlePage: React.FC<ArticlePageProps> = ({
               <Clock className="w-4 h-4 text-gray-400" />
               <span>{article.readTime} de leitura</span>
             </div>
+            {article.source && (
+              <>
+                <span>•</span>
+                <div className="flex items-center gap-1.5 text-gray-700">
+                  <span className="text-gray-400 font-normal">Fonte:</span>
+                  <span className="font-semibold text-gray-900">{article.source}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -279,6 +288,13 @@ export const ArticlePage: React.FC<ArticlePageProps> = ({
             ))
           ) : (
             <p className="text-justify leading-relaxed">{article.description}</p>
+          )}
+
+          {article.source && (
+            <div className="pt-2 text-xs text-gray-500 italic flex items-center gap-1.5">
+              <span className="font-semibold text-gray-700 not-italic">Fonte da notícia:</span>
+              <span className="text-gray-800 font-medium">{article.source}</span>
+            </div>
           )}
         </div>
 

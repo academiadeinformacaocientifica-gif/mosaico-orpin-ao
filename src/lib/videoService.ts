@@ -6,44 +6,27 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import { VideoItem } from '../types';
 import { initialVideoItems } from '../data/videosData';
+import { getStoredItem, setStoredItem } from './resilientStorage';
 
 const LOCAL_STORAGE_KEY = 'mosaico_video_items_v1';
 const DELETED_VIDEOS_KEY = 'mosaico_deleted_videos_v1';
 
 function getDeletedVideoIds(): Set<string> {
-  try {
-    const raw = localStorage.getItem(DELETED_VIDEOS_KEY);
-    if (raw) {
-      const arr = JSON.parse(raw);
-      if (Array.isArray(arr)) {
-        return new Set(arr.map(String));
-      }
-    }
-  } catch (e) {
-    console.error('Error reading deleted video ids:', e);
-  }
-  return new Set<string>();
+  const arr = getStoredItem<string[]>(DELETED_VIDEOS_KEY, []);
+  return new Set(Array.isArray(arr) ? arr.map(String) : []);
 }
 
 function markVideoAsDeleted(id: string): void {
-  try {
-    const ids = getDeletedVideoIds();
-    ids.add(id);
-    localStorage.setItem(DELETED_VIDEOS_KEY, JSON.stringify(Array.from(ids)));
-  } catch (e) {
-    console.error('Error marking video as deleted:', e);
-  }
+  const ids = getDeletedVideoIds();
+  ids.add(id);
+  setStoredItem(DELETED_VIDEOS_KEY, Array.from(ids));
 }
 
 function unmarkVideoAsDeleted(id: string): void {
-  try {
-    const ids = getDeletedVideoIds();
-    if (ids.has(id)) {
-      ids.delete(id);
-      localStorage.setItem(DELETED_VIDEOS_KEY, JSON.stringify(Array.from(ids)));
-    }
-  } catch (e) {
-    console.error('Error unmarking video as deleted:', e);
+  const ids = getDeletedVideoIds();
+  if (ids.has(id)) {
+    ids.delete(id);
+    setStoredItem(DELETED_VIDEOS_KEY, Array.from(ids));
   }
 }
 
@@ -109,28 +92,17 @@ export function getLocalVideos(): VideoItem[] {
     return items.filter((item) => !deletedIds.has(item.id));
   };
 
-  try {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (saved !== null) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) {
-        return filterOutDeleted(parsed);
-      }
-    }
-  } catch (err) {
-    console.error('Error loading local videos:', err);
+  const saved = getStoredItem<VideoItem[]>(LOCAL_STORAGE_KEY, initialVideoItems);
+  if (Array.isArray(saved) && saved.length > 0) {
+    return filterOutDeleted(saved);
   }
   return filterOutDeleted(initialVideoItems);
 }
 
 export function saveLocalVideos(items: VideoItem[]): void {
-  try {
-    const deletedIds = getDeletedVideoIds();
-    const cleanItems = items.filter((item) => !deletedIds.has(item.id));
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cleanItems));
-  } catch (err) {
-    console.error('Error saving local videos:', err);
-  }
+  const deletedIds = getDeletedVideoIds();
+  const cleanItems = items.filter((item) => !deletedIds.has(item.id));
+  setStoredItem(LOCAL_STORAGE_KEY, cleanItems);
 }
 
 export async function fetchVideoItems(): Promise<VideoItem[]> {
@@ -161,7 +133,22 @@ export async function fetchVideoItems(): Promise<VideoItem[]> {
   }
 
   if (!data || data.length === 0) {
-    return getLocalVideos();
+    const local = getLocalVideos();
+    if (local.length > 0) {
+      const rows = local.map((item) => ({
+        id: item.id,
+        ...videoItemToRow(item),
+      }));
+      (async () => {
+        try {
+          await supabase.from('video_items').upsert(rows, { onConflict: 'id' });
+          console.log('[Mosaico] Vídeos iniciais sincronizados com sucesso no Supabase.');
+        } catch (err) {
+          console.warn('Erro ao semear vídeos iniciais:', err);
+        }
+      })();
+    }
+    return local;
   }
 
   const fromDb = (data as VideoRow[]).map(rowToVideoItem);
@@ -323,4 +310,129 @@ export async function deleteVideoItem(id: string): Promise<void> {
       console.warn('Error deleting video item on Supabase:', e);
     }
   }
+}
+
+/**
+ * Envia um ficheiro de vídeo (MP4, WebM, MOV, etc.) para o Supabase Storage
+ * no bucket article-images (subpasta videos/) gerando um URL público permanente.
+ */
+export async function uploadVideoFile(
+  file: File,
+  onProgress?: (message: string) => void
+): Promise<string> {
+  if (onProgress) {
+    const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+    onProgress(`A preparar vídeo (${sizeMb} MB)...`);
+  }
+
+  if (isSupabaseConfigured) {
+    try {
+      const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `videos/${Date.now()}-${cleanName}`;
+
+      if (onProgress) {
+        onProgress('A enviar vídeo para o armazenamento na nuvem...');
+      }
+
+      const { data, error } = await supabase.storage
+        .from('article-images')
+        .upload(path, file, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: file.type || 'video/mp4',
+        });
+
+      if (!error && data) {
+        const { data: pubData } = supabase.storage.from('article-images').getPublicUrl(path);
+        if (pubData?.publicUrl) {
+          return pubData.publicUrl;
+        }
+      } else if (error) {
+        console.warn('[Storage] Aviso ao enviar vídeo para o Supabase:', error.message);
+      }
+    } catch (err) {
+      console.warn('[Storage] Falha no upload de vídeo para o Supabase:', err);
+    }
+  }
+
+  // Fallback local: cria um URL de objeto temporário do navegador
+  return URL.createObjectURL(file);
+}
+
+/**
+ * Extrai a duração e uma miniatura inicial de um ficheiro de vídeo local.
+ */
+export function extractVideoMetadata(file: File): Promise<{
+  thumbnailUrl: string;
+  durationStr: string;
+}> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || !window.URL) {
+      resolve({ thumbnailUrl: '', durationStr: '10:00' });
+      return;
+    }
+
+    try {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.muted = true;
+      video.playsInline = true;
+
+      const blobUrl = URL.createObjectURL(file);
+      video.src = blobUrl;
+
+      const cleanup = () => {
+        try {
+          URL.revokeObjectURL(blobUrl);
+        } catch {
+          // ignore
+        }
+      };
+
+      video.onloadedmetadata = () => {
+        const totalSeconds = Math.round(video.duration || 0);
+        const mins = Math.floor(totalSeconds / 60);
+        const secs = totalSeconds % 60;
+        const durationStr = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+
+        // Salta para 1 segundo ou 25% da duração para capturar miniatura com conteúdo
+        const seekTime = Math.min(1.0, video.duration > 0 ? video.duration / 4 : 0.5);
+        video.currentTime = seekTime;
+      };
+
+      video.onseeked = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.min(video.videoWidth || 800, 1280);
+          canvas.height = Math.min(video.videoHeight || 450, 720);
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.82);
+            cleanup();
+            const totalSeconds = Math.round(video.duration || 0);
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            const durationStr = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            resolve({ thumbnailUrl, durationStr });
+            return;
+          }
+        } catch {
+          // Canvas capture pode falhar em codecs restritos
+        }
+        cleanup();
+        const totalSeconds = Math.round(video.duration || 0);
+        const mins = Math.floor(totalSeconds / 60);
+        const secs = totalSeconds % 60;
+        resolve({ thumbnailUrl: '', durationStr: `${mins}:${secs < 10 ? '0' : ''}${secs}` });
+      };
+
+      video.onerror = () => {
+        cleanup();
+        resolve({ thumbnailUrl: '', durationStr: '' });
+      };
+    } catch {
+      resolve({ thumbnailUrl: '', durationStr: '' });
+    }
+  });
 }

@@ -64,6 +64,7 @@ export const ArticleFormModal: React.FC<ArticleFormModalProps> = ({
   );
   const [isoDate, setIsoDate] = useState(initialArticle?.isoDate || todayIso());
   const [readTime, setReadTime] = useState(initialArticle?.readTime || '3 min de leitura');
+  const [source, setSource] = useState(initialArticle?.source || '');
   const [imageUrl, setImageUrl] = useState(initialArticle?.imageUrl || '');
   const [tags, setTags] = useState((initialArticle?.tags || []).join(', '));
   const [isFeatured, setIsFeatured] = useState(
@@ -116,6 +117,7 @@ export const ArticleFormModal: React.FC<ArticleFormModalProps> = ({
         name: authorName.trim(),
         role: authorRole.trim(),
       },
+      source: source.trim() || undefined,
       date: formatDateLabel(isoDate),
       isoDate,
       readTime: readTime.trim(),
@@ -254,15 +256,29 @@ export const ArticleFormModal: React.FC<ArticleFormModalProps> = ({
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-[#444] mb-1.5">
-              Tempo de leitura
-            </label>
-            <input
-              value={readTime}
-              onChange={(e) => setReadTime(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-[#ccc] outline-none text-sm focus:border-[#d9251d]"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-[#444] mb-1.5">
+                Tempo de leitura
+              </label>
+              <input
+                value={readTime}
+                onChange={(e) => setReadTime(e.target.value)}
+                placeholder="ex.: 3 min de leitura"
+                className="w-full px-3 py-2 rounded-lg border border-[#ccc] outline-none text-sm focus:border-[#d9251d]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#444] mb-1.5">
+                Fonte
+              </label>
+              <input
+                value={source}
+                onChange={(e) => setSource(e.target.value)}
+                placeholder="ex.: Jornal de Angola, ANGOP, Embaixada..."
+                className="w-full px-3 py-2 rounded-lg border border-[#ccc] outline-none text-sm focus:border-[#d9251d]"
+              />
+            </div>
           </div>
 
           <div>

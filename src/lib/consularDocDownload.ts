@@ -9,6 +9,17 @@ import { ConsularDocument } from '../data/consularServices';
  * Generates an official printable consular document and triggers browser print/download.
  */
 export function generateAndDownloadConsularDocument(doc: ConsularDocument): void {
+  if (doc.fileUrl) {
+    const a = document.createElement('a');
+    a.href = doc.fileUrl;
+    a.download = doc.downloadFileName || `${doc.code || 'documento'}.pdf`;
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    return;
+  }
+
   const currentDate = new Date().toLocaleDateString('pt-PT', {
     year: 'numeric',
     month: 'long',

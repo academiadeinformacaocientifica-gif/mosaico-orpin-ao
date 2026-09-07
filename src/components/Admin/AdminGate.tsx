@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { Loader2 } from 'lucide-react';
-import { Article, GalleryItem, VideoItem, MagazineEdition } from '../../types';
+import { Article, GalleryItem, VideoItem, MagazineEdition, ConsularDocument } from '../../types';
 import { NaturalWonder } from '../../data/wondersData';
 import { useAuth } from '../../lib/AuthContext';
 import { AdminLoginPage } from './AdminLoginPage';
@@ -17,6 +17,7 @@ interface AdminGateProps {
   videoItems: VideoItem[];
   magazineEditions: MagazineEdition[];
   naturalWonders: NaturalWonder[];
+  consularDocs: ConsularDocument[];
   articlesLoading: boolean;
   articlesError: string | null;
   onArticlesChanged: () => void;
@@ -24,6 +25,7 @@ interface AdminGateProps {
   onVideosChanged: () => void;
   onEditionsChanged: () => void;
   onWondersChanged: () => void;
+  onConsularDocsChanged: () => void;
   onGoToSite: () => void;
   onShowToast: (msg: string) => void;
 }
@@ -34,6 +36,7 @@ export const AdminGate: React.FC<AdminGateProps> = ({
   videoItems,
   magazineEditions,
   naturalWonders,
+  consularDocs,
   articlesLoading,
   articlesError,
   onArticlesChanged,
@@ -41,6 +44,7 @@ export const AdminGate: React.FC<AdminGateProps> = ({
   onVideosChanged,
   onEditionsChanged,
   onWondersChanged,
+  onConsularDocsChanged,
   onGoToSite,
   onShowToast,
 }) => {
@@ -65,6 +69,7 @@ export const AdminGate: React.FC<AdminGateProps> = ({
       videoItems={videoItems}
       magazineEditions={magazineEditions}
       naturalWonders={naturalWonders}
+      consularDocs={consularDocs}
       loading={articlesLoading}
       loadError={articlesError}
       onArticlesChanged={onArticlesChanged}
@@ -72,6 +77,7 @@ export const AdminGate: React.FC<AdminGateProps> = ({
       onVideosChanged={onVideosChanged}
       onEditionsChanged={onEditionsChanged}
       onWondersChanged={onWondersChanged}
+      onConsularDocsChanged={onConsularDocsChanged}
       onGoToSite={onGoToSite}
       onShowToast={onShowToast}
     />

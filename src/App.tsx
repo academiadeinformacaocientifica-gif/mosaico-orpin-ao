@@ -4,12 +4,13 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { NavPage, Article, MagazineEdition, CategoryId, GalleryItem, VideoItem } from './types';
+import { NavPage, Article, MagazineEdition, CategoryId, GalleryItem, VideoItem, ConsularDocument } from './types';
 import { initialArticles } from './data/articles';
 import { initialGalleryItems } from './data/galleryData';
 import { initialVideoItems } from './data/videosData';
 import { initialMagazineEditions, magazineEditions } from './data/magazineEditions';
 import { angolaNaturalWonders, NaturalWonder } from './data/wondersData';
+import { consularDocuments } from './data/consularServices';
 import { upcomingEvents } from './data/events';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -35,6 +36,7 @@ import { fetchGalleryItems, getLocalGallery } from './lib/galleryService';
 import { fetchVideoItems, getLocalVideos } from './lib/videoService';
 import { fetchMagazineEditions, getLocalEditions } from './lib/editionService';
 import { fetchNaturalWonders, getLocalWonders } from './lib/wonderService';
+import { fetchConsularDocuments, getLocalConsularDocuments } from './lib/consularDocService';
 import { isSupabaseConfigured } from './lib/supabase';
 import { Search, X, FolderSearch } from 'lucide-react';
 
@@ -91,6 +93,16 @@ export default function App() {
       }
     }
     return angolaNaturalWonders;
+  });
+  const [consularDocumentsList, setConsularDocumentsList] = useState<ConsularDocument[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return getLocalConsularDocuments();
+      } catch {
+        // fallback
+      }
+    }
+    return consularDocuments;
   });
   const [articlesLoading, setArticlesLoading] = useState(isSupabaseConfigured);
   const [articlesError, setArticlesError] = useState<string | null>(null);
@@ -149,18 +161,29 @@ export default function App() {
     }
   }, []);
 
+  const loadConsularDocsFromBackend = useCallback(async () => {
+    try {
+      const items = await fetchConsularDocuments();
+      setConsularDocumentsList(items);
+    } catch (err) {
+      console.error('Erro ao carregar documentos consulares:', err);
+    }
+  }, []);
+
   useEffect(() => {
     loadArticlesFromBackend();
     loadGalleryFromBackend();
     loadVideosFromBackend();
     loadEditionsFromBackend();
     loadWondersFromBackend();
+    loadConsularDocsFromBackend();
   }, [
     loadArticlesFromBackend,
     loadGalleryFromBackend,
     loadVideosFromBackend,
     loadEditionsFromBackend,
     loadWondersFromBackend,
+    loadConsularDocsFromBackend,
   ]);
 
   useEffect(() => {
@@ -505,6 +528,11 @@ export default function App() {
     [naturalWondersList]
   );
 
+  const publicConsularDocuments = useMemo(
+    () => consularDocumentsList.filter((d) => d.isPublished !== false),
+    [consularDocumentsList]
+  );
+
   if (currentPage === 'admin') {
     return (
       <AdminGate
@@ -513,6 +541,7 @@ export default function App() {
         videoItems={videoItems}
         magazineEditions={magazineEditionsList}
         naturalWonders={naturalWondersList}
+        consularDocs={consularDocumentsList}
         articlesLoading={articlesLoading}
         articlesError={articlesError}
         onArticlesChanged={loadArticlesFromBackend}
@@ -520,6 +549,7 @@ export default function App() {
         onVideosChanged={loadVideosFromBackend}
         onEditionsChanged={loadEditionsFromBackend}
         onWondersChanged={loadWondersFromBackend}
+        onConsularDocsChanged={loadConsularDocsFromBackend}
         onGoToSite={() => handleNavigate('home')}
         onShowToast={showToast}
       />
@@ -634,6 +664,7 @@ export default function App() {
             {/* SERVIÇOS CONSULARES E DOCUMENTAÇÃO */}
             {currentPage === 'panorama-consular' && (
               <ConsularServicesPage
+                documents={publicConsularDocuments}
                 articles={publicArticles}
                 onOpenArticle={handleOpenArticle}
                 onShowToast={showToast}

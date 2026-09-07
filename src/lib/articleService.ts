@@ -6,6 +6,8 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import { Article, CategoryId, Comment } from '../types';
 import { initialArticles } from '../data/articles';
+import { optimizeImage, fileToDataUrl } from './imageOptimizer';
+import { getStoredItem, setStoredItem } from './resilientStorage';
 
 const LOCAL_STORAGE_KEY = 'mosaico_articles_v5';
 
@@ -20,6 +22,7 @@ interface ArticleRow {
   author_name: string;
   author_role: string;
   author_avatar: string | null;
+  source?: string | null;
   date_label: string;
   iso_date: string;
   read_time: string;
@@ -57,6 +60,7 @@ function rowToArticle(row: ArticleRow): Article {
       role: row.author_role,
       avatar: row.author_avatar || undefined,
     },
+    source: row.source || undefined,
     date: row.date_label,
     isoDate: row.iso_date,
     readTime: row.read_time,
@@ -84,6 +88,7 @@ function articleToRow(article: ArticleInput): Omit<ArticleRow, 'created_at' | 'u
     author_name: article.author.name,
     author_role: article.author.role,
     author_avatar: article.author.avatar || null,
+    source: article.source || null,
     date_label: article.date,
     iso_date: article.isoDate,
     read_time: article.readTime,
@@ -100,26 +105,12 @@ function articleToRow(article: ArticleInput): Omit<ArticleRow, 'created_at' | 'u
 }
 
 function getLocalArticles(): Article[] {
-  try {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (e) {
-    console.error('Erro ao ler notícias locais:', e);
-  }
-  return initialArticles;
+  const items = getStoredItem<Article[]>(LOCAL_STORAGE_KEY, initialArticles);
+  return Array.isArray(items) && items.length > 0 ? items : initialArticles;
 }
 
 function saveLocalArticles(items: Article[]) {
-  try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
-  } catch (e) {
-    console.error('Erro ao guardar notícias locais:', e);
-  }
+  setStoredItem(LOCAL_STORAGE_KEY, items);
 }
 
 export function slugify(title: string): string {
@@ -171,6 +162,7 @@ export async function createArticle(article: ArticleInput): Promise<Article> {
     category: article.category,
     categoryId: article.categoryId,
     author: article.author,
+    source: article.source,
     date: article.date,
     isoDate: article.isoDate,
     readTime: article.readTime,
@@ -194,11 +186,13 @@ export async function createArticle(article: ArticleInput): Promise<Article> {
         .select()
         .single();
 
-      if (error && (error.code === 'PGRST204' || error.message?.includes('is_published'))) {
-        const { is_published: _p, ...rowWithoutPublished } = row as any;
+      if (error && (error.code === 'PGRST204' || error.message?.includes('is_published') || error.message?.includes('source'))) {
+        const fallbackRow: any = { ...row };
+        if (error.message?.includes('is_published') || error.code === 'PGRST204') delete fallbackRow.is_published;
+        if (error.message?.includes('source') || error.code === 'PGRST204') delete fallbackRow.source;
         const retryResult = await supabase
           .from('articles')
-          .insert(rowWithoutPublished)
+          .insert(fallbackRow)
           .select()
           .single();
         data = retryResult.data;
@@ -207,6 +201,10 @@ export async function createArticle(article: ArticleInput): Promise<Article> {
 
       if (!error && data) {
         const saved = rowToArticle(data as ArticleRow);
+        // Retain client source if database didn't have the column yet
+        if (!saved.source && newArticle.source) {
+          saved.source = newArticle.source;
+        }
         const current = getLocalArticles();
         saveLocalArticles([saved, ...current.filter((a) => a.id !== saved.id)]);
         return saved;
@@ -232,6 +230,7 @@ export async function updateArticle(id: string, article: ArticleInput): Promise<
     category: article.category,
     categoryId: article.categoryId,
     author: article.author,
+    source: article.source,
     date: article.date,
     isoDate: article.isoDate,
     readTime: article.readTime,
@@ -257,11 +256,13 @@ export async function updateArticle(id: string, article: ArticleInput): Promise<
         .select()
         .single();
 
-      if (error && (error.code === 'PGRST204' || error.message?.includes('is_published'))) {
-        const { is_published: _p, ...payloadWithoutPublished } = updatePayload;
+      if (error && (error.code === 'PGRST204' || error.message?.includes('is_published') || error.message?.includes('source'))) {
+        const fallbackPayload: any = { ...updatePayload };
+        if (error.message?.includes('is_published') || error.code === 'PGRST204') delete fallbackPayload.is_published;
+        if (error.message?.includes('source') || error.code === 'PGRST204') delete fallbackPayload.source;
         const retryResult = await supabase
           .from('articles')
-          .update(payloadWithoutPublished)
+          .update(fallbackPayload)
           .eq('id', id)
           .select()
           .single();
@@ -271,6 +272,9 @@ export async function updateArticle(id: string, article: ArticleInput): Promise<
 
       if (!error && data) {
         const saved = rowToArticle(data as ArticleRow);
+        if (!saved.source && updatedArticle.source) {
+          saved.source = updatedArticle.source;
+        }
         const current = getLocalArticles();
         saveLocalArticles(current.map((a) => (a.id === id ? saved : a)));
         return saved;
@@ -302,39 +306,48 @@ export async function deleteArticle(id: string): Promise<void> {
 }
 
 export async function uploadArticleImage(file: File): Promise<string> {
-  if (!isSupabaseConfigured) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (e) => reject(e);
-      reader.readAsDataURL(file);
-    });
-  }
-  const ext = file.name.split('.').pop() || 'jpg';
-  const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-
+  // 1. Otimiza previamente a fotografia no browser (reduz de 5-15MB para ~100-150KB)
+  let optimizedDataUrl: string;
   try {
-    const { error } = await supabase.storage
-      .from('article-images')
-      .upload(path, file, { cacheControl: '3600', upsert: false });
-
-    if (error) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = (e) => reject(e);
-        reader.readAsDataURL(file);
-      });
-    }
-
-    const { data } = supabase.storage.from('article-images').getPublicUrl(path);
-    return data.publicUrl;
-  } catch (err: any) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (e) => reject(e);
-      reader.readAsDataURL(file);
-    });
+    optimizedDataUrl = await optimizeImage(file, { maxWidth: 1600, maxHeight: 1600, quality: 0.82 });
+  } catch {
+    optimizedDataUrl = await fileToDataUrl(file);
   }
+
+  // 2. Se o Supabase estiver configurado, tenta enviar para o bucket oficial
+  if (isSupabaseConfigured) {
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+      // Converte o DataURL otimizado em Blob para envio eficiente
+      let uploadPayload: Blob | File = file;
+      if (optimizedDataUrl.startsWith('data:')) {
+        const fetchRes = await fetch(optimizedDataUrl);
+        uploadPayload = await fetchRes.blob();
+      }
+
+      const { error } = await supabase.storage
+        .from('article-images')
+        .upload(path, uploadPayload, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: 'image/jpeg',
+        });
+
+      if (!error) {
+        const { data } = supabase.storage.from('article-images').getPublicUrl(path);
+        if (data?.publicUrl) {
+          return data.publicUrl;
+        }
+      } else {
+        console.warn('[Storage] Aviso no bucket "article-images" do Supabase:', error.message);
+      }
+    } catch (err) {
+      console.warn('[Storage] Falha ao enviar para o bucket do Supabase, usando versão local otimizada:', err);
+    }
+  }
+
+  // 3. Fallback: devolve a versão otimizada leve (< 150KB), evitando QuotaExceededError
+  return optimizedDataUrl;
 }

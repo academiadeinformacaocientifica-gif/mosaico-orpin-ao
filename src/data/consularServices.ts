@@ -17,6 +17,8 @@ export interface ConsularDocument {
   targetAudience: 'Cidadãos Angolanos' | 'Cidadãos Estrangeiros' | 'Geral';
   downloadFileName: string;
   badge?: string;
+  fileUrl?: string;
+  isPublished?: boolean;
 }
 
 export interface ConsularService {

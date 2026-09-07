@@ -8,6 +8,22 @@ interface VideosPageProps {
   onShowToast: (msg: string) => void;
 }
 
+function getEmbedUrl(url?: string): { isEmbed: boolean; embedUrl: string } {
+  if (!url) return { isEmbed: false, embedUrl: '' };
+
+  const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+  if (ytMatch && ytMatch[1]) {
+    return { isEmbed: true, embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0` };
+  }
+
+  const vimeoMatch = url.match(/(?:vimeo\.com\/)(\d+)/i);
+  if (vimeoMatch && vimeoMatch[1]) {
+    return { isEmbed: true, embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1` };
+  }
+
+  return { isEmbed: false, embedUrl: url };
+}
+
 export const VideosPage: React.FC<VideosPageProps> = ({ items = initialVideoItems, onShowToast }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('todos');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -168,71 +184,88 @@ export const VideosPage: React.FC<VideosPageProps> = ({ items = initialVideoItem
 
             {/* VIDEO PLAYER */}
             <div className="bg-black aspect-video relative flex items-center justify-center overflow-hidden">
-              {activeVideo.videoUrl ? (
-                <video
-                  src={activeVideo.videoUrl}
-                  controls
-                  autoPlay
-                  className="w-full h-full object-contain bg-black"
-                />
-              ) : (
-                <>
-                  <img
-                    src={activeVideo.image}
-                    alt={activeVideo.title}
-                    className="w-full h-full object-cover opacity-80"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-between p-6">
-                    <div className="flex justify-between items-center">
-                      <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 animate-pulse">
-                        <span className="w-2 h-2 rounded-full bg-white"></span>
-                        Transmissão Oficial Mosaico TV
-                      </span>
-                      <span className="text-xs text-white/80 bg-black/50 px-3 py-1 rounded">
-                        {activeVideo.views}
-                      </span>
-                    </div>
+              {(() => {
+                const embed = getEmbedUrl(activeVideo.videoUrl);
+                if (embed.isEmbed) {
+                  return (
+                    <iframe
+                      src={embed.embedUrl}
+                      title={activeVideo.title}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      className="w-full h-full border-0"
+                    />
+                  );
+                }
+                if (activeVideo.videoUrl) {
+                  return (
+                    <video
+                      src={activeVideo.videoUrl}
+                      controls
+                      autoPlay
+                      className="w-full h-full object-contain bg-black"
+                    />
+                  );
+                }
+                return (
+                  <>
+                    <img
+                      src={activeVideo.image}
+                      alt={activeVideo.title}
+                      className="w-full h-full object-cover opacity-80"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-between p-6">
+                      <div className="flex justify-between items-center">
+                        <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 animate-pulse">
+                          <span className="w-2 h-2 rounded-full bg-white"></span>
+                          Transmissão Oficial Mosaico TV
+                        </span>
+                        <span className="text-xs text-white/80 bg-black/50 px-3 py-1 rounded">
+                          {activeVideo.views}
+                        </span>
+                      </div>
 
-                    <div className="flex flex-col items-center justify-center">
-                      {isPlaying ? (
-                        <div className="text-center space-y-3 bg-black/60 backdrop-blur-md p-6 rounded-2xl border border-white/20 max-w-lg">
-                          <div className="w-14 h-14 rounded-full bg-[#d9251d] text-white flex items-center justify-center mx-auto shadow-lg animate-bounce">
-                            <Play className="w-6 h-6 fill-white ml-0.5" />
+                      <div className="flex flex-col items-center justify-center">
+                        {isPlaying ? (
+                          <div className="text-center space-y-3 bg-black/60 backdrop-blur-md p-6 rounded-2xl border border-white/20 max-w-lg">
+                            <div className="w-14 h-14 rounded-full bg-[#d9251d] text-white flex items-center justify-center mx-auto shadow-lg animate-bounce">
+                              <Play className="w-6 h-6 fill-white ml-0.5" />
+                            </div>
+                            <h4 className="text-sm font-bold text-white">A reproduzir vídeo institucional</h4>
+                            <p className="text-xs text-gray-300">
+                              O sinal oficial da Embaixada de Angola em Espanha está em transmissão contínua.
+                            </p>
+                            <button
+                              onClick={() => setIsPlaying(false)}
+                              className="bg-white/20 hover:bg-white/30 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer"
+                            >
+                              Pausar Reprodução
+                            </button>
                           </div>
-                          <h4 className="text-sm font-bold text-white">A reproduzir vídeo institucional</h4>
-                          <p className="text-xs text-gray-300">
-                            O sinal oficial da Embaixada de Angola em Espanha está em transmissão contínua.
-                          </p>
+                        ) : (
                           <button
-                            onClick={() => setIsPlaying(false)}
-                            className="bg-white/20 hover:bg-white/30 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer"
+                            onClick={() => setIsPlaying(true)}
+                            className="w-16 h-16 rounded-full bg-[#d9251d] text-white flex items-center justify-center shadow-2xl hover:scale-110 transition-transform cursor-pointer"
                           >
-                            Pausar Reprodução
+                            <Play className="w-8 h-8 fill-white ml-1" />
                           </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setIsPlaying(true)}
-                          className="w-16 h-16 rounded-full bg-[#d9251d] text-white flex items-center justify-center shadow-2xl hover:scale-110 transition-transform cursor-pointer"
-                        >
-                          <Play className="w-8 h-8 fill-white ml-1" />
-                        </button>
-                      )}
-                    </div>
+                        )}
+                      </div>
 
-                    <div className="space-y-2">
-                      <div className="w-full bg-white/30 h-1.5 rounded-full overflow-hidden cursor-pointer">
-                        <div className="bg-[#d9251d] w-2/5 h-full"></div>
-                      </div>
-                      <div className="flex justify-between text-[11px] text-white/80">
-                        <span>04:15 / {activeVideo.duration}</span>
-                        <span>HD 1080p • Embaixada de Angola</span>
+                      <div className="space-y-2">
+                        <div className="w-full bg-white/30 h-1.5 rounded-full overflow-hidden cursor-pointer">
+                          <div className="bg-[#d9251d] w-2/5 h-full"></div>
+                        </div>
+                        <div className="flex justify-between text-[11px] text-white/80">
+                          <span>04:15 / {activeVideo.duration}</span>
+                          <span>HD 1080p • Embaixada de Angola</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </>
-              )}
+                  </>
+                );
+              })()}
             </div>
 
             <div className="p-6 bg-white space-y-4">

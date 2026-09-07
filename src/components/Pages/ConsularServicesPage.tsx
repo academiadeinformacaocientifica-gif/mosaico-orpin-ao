@@ -41,6 +41,7 @@ import { generateAndDownloadConsularDocument } from '../../lib/consularDocDownlo
 
 interface ConsularServicesPageProps {
   articles?: Article[];
+  documents?: ConsularDocument[];
   onOpenArticle?: (article: Article) => void;
   onShowToast: (message: string) => void;
 }
@@ -49,6 +50,7 @@ type FilterCategory = 'todos' | 'documentos' | 'vistos' | 'identidade' | 'passap
 
 export const ConsularServicesPage: React.FC<ConsularServicesPageProps> = ({
   articles = [],
+  documents = consularDocuments,
   onOpenArticle,
   onShowToast,
 }) => {
@@ -59,7 +61,9 @@ export const ConsularServicesPage: React.FC<ConsularServicesPageProps> = ({
 
   // Filtered documents
   const filteredDocuments = useMemo(() => {
-    return consularDocuments.filter((doc) => {
+    return documents.filter((doc) => {
+      if (doc.isPublished === false) return false;
+
       const matchesSearch =
         searchQuery === '' ||
         doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -77,7 +81,7 @@ export const ConsularServicesPage: React.FC<ConsularServicesPageProps> = ({
 
       return matchesSearch && matchesCategory;
     });
-  }, [searchQuery, activeFilter]);
+  }, [documents, searchQuery, activeFilter]);
 
   // Filtered services
   const filteredServices = useMemo(() => {

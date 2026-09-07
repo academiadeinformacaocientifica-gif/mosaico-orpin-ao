@@ -5,7 +5,6 @@ import {
   Clock, 
   BookOpen, 
   Search, 
-  Building2, 
   Newspaper, 
   Menu, 
   X, 
@@ -153,31 +152,11 @@ export const Header: React.FC<HeaderProps> = ({
                     </button>
                   </li>
                 ))}
-                <li>
-                  <a
-                    href="https://www.governo.gov.ao"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-[#111] hover:bg-[#d9251d] text-white text-[11px] font-bold rounded-full px-3.5 py-1.5 flex items-center gap-1.5 transition-colors shadow-xs ml-1"
-                  >
-                    <Building2 className="w-3.5 h-3.5" />
-                    <span>Portal Institucional</span>
-                  </a>
-                </li>
               </ul>
             </nav>
 
             {/* MOBILE MENU TOGGLE */}
             <div className="flex items-center gap-2 lg:hidden">
-              <a
-                href="https://www.governo.gov.ao"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-[#111] text-white text-[10px] font-bold rounded-full px-2.5 py-1 flex items-center gap-1"
-              >
-                <Building2 className="w-3 h-3" />
-                <span>Institucional</span>
-              </a>
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="p-2 text-[#444] hover:text-[#d9251d] focus:outline-none"

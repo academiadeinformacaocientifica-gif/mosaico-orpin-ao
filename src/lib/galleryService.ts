@@ -7,44 +7,27 @@ import { supabase, isSupabaseConfigured } from './supabase';
 import { GalleryItem } from '../types';
 import { initialGalleryItems } from '../data/galleryData';
 import { uploadArticleImage } from './articleService';
+import { getStoredItem, setStoredItem } from './resilientStorage';
 
 const LOCAL_STORAGE_KEY = 'mosaico_gallery_items_v1';
 const DELETED_GALLERY_KEY = 'mosaico_deleted_gallery_v1';
 
 function getDeletedGalleryIds(): Set<string> {
-  try {
-    const raw = localStorage.getItem(DELETED_GALLERY_KEY);
-    if (raw) {
-      const arr = JSON.parse(raw);
-      if (Array.isArray(arr)) {
-        return new Set(arr.map(String));
-      }
-    }
-  } catch (e) {
-    console.error('Error reading deleted gallery ids:', e);
-  }
-  return new Set<string>();
+  const arr = getStoredItem<string[]>(DELETED_GALLERY_KEY, []);
+  return new Set(Array.isArray(arr) ? arr.map(String) : []);
 }
 
 function markGalleryAsDeleted(id: string): void {
-  try {
-    const ids = getDeletedGalleryIds();
-    ids.add(id);
-    localStorage.setItem(DELETED_GALLERY_KEY, JSON.stringify(Array.from(ids)));
-  } catch (e) {
-    console.error('Error marking gallery as deleted:', e);
-  }
+  const ids = getDeletedGalleryIds();
+  ids.add(id);
+  setStoredItem(DELETED_GALLERY_KEY, Array.from(ids));
 }
 
 function unmarkGalleryAsDeleted(id: string): void {
-  try {
-    const ids = getDeletedGalleryIds();
-    if (ids.has(id)) {
-      ids.delete(id);
-      localStorage.setItem(DELETED_GALLERY_KEY, JSON.stringify(Array.from(ids)));
-    }
-  } catch (e) {
-    console.error('Error unmarking gallery as deleted:', e);
+  const ids = getDeletedGalleryIds();
+  if (ids.has(id)) {
+    ids.delete(id);
+    setStoredItem(DELETED_GALLERY_KEY, Array.from(ids));
   }
 }
 
@@ -55,6 +38,8 @@ interface GalleryRow {
   date_label: string;
   description: string;
   image_url: string;
+  images?: string[] | null;
+  collection?: string | null;
   is_published: boolean;
   created_at: string;
   updated_at: string;
@@ -66,6 +51,8 @@ export type GalleryInput = {
   date: string;
   description: string;
   image: string;
+  images?: string[];
+  collection?: string;
   isPublished?: boolean;
 };
 
@@ -77,6 +64,8 @@ function rowToGalleryItem(row: GalleryRow): GalleryItem {
     date: row.date_label,
     description: row.description,
     image: row.image_url,
+    images: row.images || undefined,
+    collection: row.collection || undefined,
     isPublished: row.is_published ?? true,
   };
 }
@@ -88,6 +77,8 @@ function galleryItemToRow(item: GalleryInput) {
     date_label: item.date,
     description: item.description,
     image_url: item.image,
+    images: item.images || null,
+    collection: item.collection || null,
     is_published: item.isPublished !== false,
   };
 }
@@ -98,28 +89,17 @@ export function getLocalGallery(): GalleryItem[] {
     return items.filter((item) => !deletedIds.has(item.id));
   };
 
-  try {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (saved !== null) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) {
-        return filterOutDeleted(parsed);
-      }
-    }
-  } catch (err) {
-    console.error('Error loading local gallery:', err);
+  const saved = getStoredItem<GalleryItem[]>(LOCAL_STORAGE_KEY, initialGalleryItems);
+  if (Array.isArray(saved) && saved.length > 0) {
+    return filterOutDeleted(saved);
   }
   return filterOutDeleted(initialGalleryItems);
 }
 
 export function saveLocalGallery(items: GalleryItem[]): void {
-  try {
-    const deletedIds = getDeletedGalleryIds();
-    const cleanItems = items.filter((item) => !deletedIds.has(item.id));
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cleanItems));
-  } catch (err) {
-    console.error('Error saving local gallery:', err);
-  }
+  const deletedIds = getDeletedGalleryIds();
+  const cleanItems = items.filter((item) => !deletedIds.has(item.id));
+  setStoredItem(LOCAL_STORAGE_KEY, cleanItems);
 }
 
 export async function fetchGalleryItems(): Promise<GalleryItem[]> {
@@ -150,8 +130,22 @@ export async function fetchGalleryItems(): Promise<GalleryItem[]> {
   }
 
   if (!data || data.length === 0) {
-    // If table is empty, return local gallery
-    return getLocalGallery();
+    const local = getLocalGallery();
+    if (local.length > 0) {
+      const rows = local.map((item) => ({
+        id: item.id,
+        ...galleryItemToRow(item),
+      }));
+      (async () => {
+        try {
+          await supabase.from('gallery_items').upsert(rows, { onConflict: 'id' });
+          console.log('[Mosaico] Galeria inicial sincronizada com sucesso no Supabase.');
+        } catch (err) {
+          console.warn('Erro ao semear galeria inicial:', err);
+        }
+      })();
+    }
+    return local;
   }
 
   const fromDb = (data as GalleryRow[]).map(rowToGalleryItem);
@@ -179,11 +173,14 @@ export async function createGalleryItem(input: GalleryInput): Promise<GalleryIte
         .select()
         .single();
 
-      if (error && (error.code === 'PGRST204' || error.message?.includes('is_published'))) {
-        const { is_published: _p, ...rowWithoutPublished } = row as any;
+      if (error && (error.code === 'PGRST204' || error.message?.includes('is_published') || error.message?.includes('collection') || error.message?.includes('images'))) {
+        const fallbackRow: any = { ...row };
+        if (error.message?.includes('is_published') || error.code === 'PGRST204') delete fallbackRow.is_published;
+        if (error.message?.includes('collection') || error.code === 'PGRST204') delete fallbackRow.collection;
+        if (error.message?.includes('images') || error.code === 'PGRST204') delete fallbackRow.images;
         const retryResult = await supabase
           .from('gallery_items')
-          .insert(rowWithoutPublished)
+          .insert(fallbackRow)
           .select()
           .single();
         data = retryResult.data;
@@ -204,6 +201,8 @@ export async function createGalleryItem(input: GalleryInput): Promise<GalleryIte
 
       if (!error && data) {
         const item = rowToGalleryItem(data as GalleryRow);
+        if (!item.collection && input.collection) item.collection = input.collection;
+        if (!item.images && input.images) item.images = input.images;
         unmarkGalleryAsDeleted(item.id);
         const current = getLocalGallery();
         const updated = [item, ...current.filter((i) => i.id !== item.id)];
@@ -223,6 +222,8 @@ export async function createGalleryItem(input: GalleryInput): Promise<GalleryIte
     date: input.date,
     description: input.description,
     image: input.image,
+    images: input.images,
+    collection: input.collection,
     isPublished,
   };
 
@@ -247,11 +248,14 @@ export async function updateGalleryItem(id: string, input: GalleryInput): Promis
         .select()
         .single();
 
-      if (error && (error.code === 'PGRST204' || error.message?.includes('is_published'))) {
-        const { is_published: _p, ...payloadWithoutPublished } = updatePayload;
+      if (error && (error.code === 'PGRST204' || error.message?.includes('is_published') || error.message?.includes('collection') || error.message?.includes('images'))) {
+        const fallbackPayload: any = { ...updatePayload };
+        if (error.message?.includes('is_published') || error.code === 'PGRST204') delete fallbackPayload.is_published;
+        if (error.message?.includes('collection') || error.code === 'PGRST204') delete fallbackPayload.collection;
+        if (error.message?.includes('images') || error.code === 'PGRST204') delete fallbackPayload.images;
         const retryResult = await supabase
           .from('gallery_items')
-          .update(payloadWithoutPublished)
+          .update(fallbackPayload)
           .eq('id', id)
           .select()
           .single();
@@ -261,6 +265,8 @@ export async function updateGalleryItem(id: string, input: GalleryInput): Promis
 
       if (!error && data) {
         const updatedItem = rowToGalleryItem(data as GalleryRow);
+        if (!updatedItem.collection && input.collection) updatedItem.collection = input.collection;
+        if (!updatedItem.images && input.images) updatedItem.images = input.images;
         const current = getLocalGallery();
         const next = current.map((i) => (i.id === id ? updatedItem : i));
         saveLocalGallery(next);
@@ -280,6 +286,8 @@ export async function updateGalleryItem(id: string, input: GalleryInput): Promis
     date: input.date,
     description: input.description,
     image: input.image,
+    images: input.images,
+    collection: input.collection,
     isPublished,
   };
   const next = current.map((i) => (i.id === id ? updatedItem : i));
@@ -307,6 +315,15 @@ export async function deleteGalleryItem(id: string): Promise<void> {
       console.warn('Error deleting gallery item on Supabase:', e);
     }
   }
+}
+
+export async function createGalleryItems(inputs: GalleryInput[]): Promise<GalleryItem[]> {
+  const results: GalleryItem[] = [];
+  for (let i = 0; i < inputs.length; i++) {
+    const item = await createGalleryItem(inputs[i]);
+    results.push(item);
+  }
+  return results;
 }
 
 export { uploadArticleImage as uploadGalleryImage };

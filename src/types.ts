@@ -63,6 +63,7 @@ export interface Article {
     role: string;
     avatar?: string;
   };
+  source?: string;
   date: string;
   isoDate: string;
   readTime: string;
@@ -84,6 +85,8 @@ export interface GalleryItem {
   date: string;
   description: string;
   image: string;
+  images?: string[];
+  collection?: string;
   isPublished?: boolean;
 }
 
@@ -138,6 +141,24 @@ export interface ConsularService {
   requirements: string[];
   description: string;
   downloadableForms?: { title: string; filename: string }[];
+}
+
+export interface ConsularDocument {
+  id: string;
+  title: string;
+  code: string;
+  category: 'vistos' | 'identidade' | 'notariado' | 'comunidade' | 'viagem';
+  categoryLabel: string;
+  description: string;
+  fileFormat: 'PDF' | 'DOCX';
+  fileSize: string;
+  requirements: string[];
+  instructions: string;
+  targetAudience: 'Cidadãos Angolanos' | 'Cidadãos Estrangeiros' | 'Geral';
+  downloadFileName: string;
+  badge?: string;
+  fileUrl?: string;
+  isPublished?: boolean;
 }
 
 export interface HistoricalMilestone {
