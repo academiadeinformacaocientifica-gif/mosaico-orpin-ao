@@ -28,10 +28,13 @@ import {
   FileText,
   Download,
   FileUp,
+  Database,
+  AlertTriangle,
 } from 'lucide-react';
 import { Article, GalleryItem, VideoItem, MagazineEdition, ConsularDocument } from '../../types';
 import { NaturalWonder } from '../../data/wondersData';
 import { useAuth } from '../../lib/AuthContext';
+import { isSupabaseConfigured } from '../../lib/supabase';
 import { ArticleInput, createArticle, updateArticle, deleteArticle } from '../../lib/articleService';
 import {
   GalleryInput,
@@ -70,6 +73,7 @@ import { VideoFormModal } from './VideoFormModal';
 import { EditionFormModal } from './EditionFormModal';
 import { WonderFormModal } from './WonderFormModal';
 import { ConsularDocFormModal } from './ConsularDocFormModal';
+import { DatabaseStatusModal } from './DatabaseStatusModal';
 
 type AdminTab = 'noticias' | 'documentos' | 'maravilhas' | 'edicoes' | 'galeria' | 'videos';
 type StatusFilter = 'todos' | 'publicados' | 'rascunhos';
@@ -141,6 +145,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Consular Documents State
   const [consularDocFormOpen, setConsularDocFormOpen] = useState(false);
   const [editingConsularDoc, setEditingConsularDoc] = useState<ConsularDocument | null>(null);
+
+  // Database Diagnostic Modal
+  const [dbStatusOpen, setDbStatusOpen] = useState(false);
 
   // Deletion tracking
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -647,6 +654,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setDbStatusOpen(true)}
+              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                isSupabaseConfigured
+                  ? 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
+                  : 'text-amber-800 bg-amber-50 border-amber-300 hover:bg-amber-100'
+              }`}
+              title="Diagnóstico de Conexão com a Nuvem e Sincronização Multi-dispositivo"
+            >
+              <Database className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">
+                {isSupabaseConfigured ? 'Base de Dados: Conectada' : 'Modo Local (Supabase Desconectado)'}
+              </span>
+              <span className="sm:hidden">
+                {isSupabaseConfigured ? 'Nuvem OK' : 'Modo Local'}
+              </span>
+            </button>
+            <button
               onClick={onGoToSite}
               className="flex items-center gap-1.5 text-xs font-semibold text-[#444] hover:text-[#d9251d] px-3 py-1.5 rounded-lg hover:bg-[#f8f9fa] transition-colors cursor-pointer"
             >
@@ -666,6 +690,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* MAIN CONTENT */}
       <main className="max-w-[1180px] mx-auto px-4 sm:px-6 py-8">
+        {/* MULTI-DEVICE SYNC WARNING BANNER IF LOCAL MODE */}
+        {!isSupabaseConfigured && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-950 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-bold text-amber-950 uppercase tracking-wide">
+                  Aviso: Sincronização Multi-Dispositivo Requer Supabase Conectado
+                </p>
+                <p className="text-xs text-amber-900/90 mt-1 leading-relaxed">
+                  Actualmente o site está a operar em <strong>Modo Local Resiliente</strong> porque as variáveis do Supabase não estão configuradas neste servidor/hospedagem. Qualquer adição, edição ou eliminação fica guardada <strong>apenas na memória deste dispositivo</strong>. Para que o que fizer no telemóvel apareça no computador e vice-versa, ligue o Supabase.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setDbStatusOpen(true)}
+              className="shrink-0 text-xs font-bold bg-[#d9251d] hover:bg-[#b91e17] text-white px-4 py-2 rounded-xl transition-all shadow-xs cursor-pointer active:scale-95"
+            >
+              Diagnóstico & Script SQL
+            </button>
+          </div>
+        )}
+
         {/* TOP TITLE & QUICK ACTION BUTTONS */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
@@ -1902,6 +1949,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             setEditingWonder(null);
           }}
           onSave={handleSaveWonder}
+        />
+      )}
+
+      {/* DATABASE DIAGNOSTIC MODAL */}
+      {dbStatusOpen && (
+        <DatabaseStatusModal
+          onClose={() => setDbStatusOpen(false)}
+          onShowToast={onShowToast}
+          onRefreshAll={() => {
+            onArticlesChanged();
+            onGalleryChanged();
+            onVideosChanged();
+            onEditionsChanged();
+            onWondersChanged();
+            onConsularDocsChanged();
+          }}
         />
       )}
     </div>

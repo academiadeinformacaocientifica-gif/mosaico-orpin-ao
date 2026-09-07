@@ -146,11 +146,36 @@ create table if not exists public.natural_wonders (
 alter table public.natural_wonders add column if not exists is_published boolean not null default true;
 create index if not exists idx_natural_wonders_number on public.natural_wonders(number asc);
 
--- 7. POLÍTICAS DE SEGURANÇA E ACESSO (Row Level Security - RLS) --------------
+-- 7. TABELA DE DOCUMENTOS E FORMULÁRIOS CONSULARES ---------------------------
+create table if not exists public.consular_documents (
+  id                 text primary key,
+  title              text not null,
+  code               text not null,
+  category           text not null default 'vistos',
+  category_label     text not null default 'Vistos & Entrada',
+  description        text not null default '',
+  file_format        text not null default 'PDF',
+  file_size          text not null default '300 KB',
+  requirements       text[] not null default '{}',
+  instructions       text not null default '',
+  target_audience    text not null default 'Geral',
+  download_file_name text not null,
+  badge              text,
+  file_url           text,
+  is_published       boolean not null default true,
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now()
+);
+
+alter table public.consular_documents add column if not exists is_published boolean not null default true;
+create index if not exists idx_consular_docs_category on public.consular_documents(category);
+
+-- 8. POLÍTICAS DE SEGURANÇA E ACESSO (Row Level Security - RLS) --------------
 
 -- Habilitar RLS em todas as tabelas
 alter table public.admin_users enable row level security;
 alter table public.articles enable row level security;
+alter table public.consular_documents enable row level security;
 alter table public.gallery_items enable row level security;
 alter table public.video_items enable row level security;
 alter table public.magazine_editions enable row level security;
@@ -228,7 +253,20 @@ create policy "Atualização de maravilhas" on public.natural_wonders for update
 drop policy if exists "Remoção de maravilhas" on public.natural_wonders;
 create policy "Remoção de maravilhas" on public.natural_wonders for delete using (true);
 
--- 8. STORAGE / BUCKET DE IMAGENS E MULTIMÉDIA --------------------------------
+-- Políticas consular_documents
+drop policy if exists "Leitura pública de documentos consulares" on public.consular_documents;
+create policy "Leitura pública de documentos consulares" on public.consular_documents for select using (true);
+
+drop policy if exists "Inserção de documentos consulares" on public.consular_documents;
+create policy "Inserção de documentos consulares" on public.consular_documents for insert with check (true);
+
+drop policy if exists "Atualização de documentos consulares" on public.consular_documents;
+create policy "Atualização de documentos consulares" on public.consular_documents for update using (true) with check (true);
+
+drop policy if exists "Remoção de documentos consulares" on public.consular_documents;
+create policy "Remoção de documentos consulares" on public.consular_documents for delete using (true);
+
+-- 9. STORAGE / BUCKET DE IMAGENS E MULTIMÉDIA --------------------------------
 insert into storage.buckets (id, name, public)
 values ('article-images', 'article-images', true)
 on conflict (id) do update set public = true;

@@ -164,9 +164,33 @@ create table if not exists public.natural_wonders (
 
 alter table public.natural_wonders add column if not exists is_published boolean not null default true;
 
--- 7. SEGURANÇA E RLS EM TODAS AS TABELAS -------------------------------------
+-- 7. TABELA DE DOCUMENTOS E FORMULÁRIOS CONSULARES ---------------------------
+create table if not exists public.consular_documents (
+  id                 text primary key,
+  title              text not null,
+  code               text not null,
+  category           text not null default 'vistos',
+  category_label     text not null default 'Vistos & Entrada',
+  description        text not null default '',
+  file_format        text not null default 'PDF',
+  file_size          text not null default '300 KB',
+  requirements       text[] not null default '{}',
+  instructions       text not null default '',
+  target_audience    text not null default 'Geral',
+  download_file_name text not null,
+  badge              text,
+  file_url           text,
+  is_published       boolean not null default true,
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now()
+);
+
+alter table public.consular_documents add column if not exists is_published boolean not null default true;
+
+-- 8. SEGURANÇA E RLS EM TODAS AS TABELAS -------------------------------------
 alter table public.admin_users enable row level security;
 alter table public.articles enable row level security;
+alter table public.consular_documents enable row level security;
 alter table public.gallery_items enable row level security;
 alter table public.video_items enable row level security;
 alter table public.magazine_editions enable row level security;
@@ -188,6 +212,15 @@ drop policy if exists "Atualização de notícias" on public.articles;
 create policy "Atualização de notícias" on public.articles for update using (true) with check (true);
 drop policy if exists "Remoção de notícias" on public.articles;
 create policy "Remoção de notícias" on public.articles for delete using (true);
+
+drop policy if exists "Leitura pública de documentos consulares" on public.consular_documents;
+create policy "Leitura pública de documentos consulares" on public.consular_documents for select using (true);
+drop policy if exists "Inserção de documentos consulares" on public.consular_documents;
+create policy "Inserção de documentos consulares" on public.consular_documents for insert with check (true);
+drop policy if exists "Atualização de documentos consulares" on public.consular_documents;
+create policy "Atualização de documentos consulares" on public.consular_documents for update using (true) with check (true);
+drop policy if exists "Remoção de documentos consulares" on public.consular_documents;
+create policy "Remoção de documentos consulares" on public.consular_documents for delete using (true);
 
 drop policy if exists "Leitura pública de galeria" on public.gallery_items;
 create policy "Leitura pública de galeria" on public.gallery_items for select using (true);

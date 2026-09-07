@@ -25,6 +25,7 @@ export interface DbHealthReport {
 
 const TABLES_TO_CHECK = [
   { key: 'articles', name: 'articles', label: 'Notícias & Artigos' },
+  { key: 'consular_documents', name: 'consular_documents', label: 'Documentos Consulares' },
   { key: 'gallery_items', name: 'gallery_items', label: 'Galeria Fotográfica' },
   { key: 'video_items', name: 'video_items', label: 'Vídeos & Reportagens' },
   { key: 'magazine_editions', name: 'magazine_editions', label: 'Edições da Revista Mosaico' },
