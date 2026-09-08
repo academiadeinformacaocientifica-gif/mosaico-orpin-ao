@@ -351,3 +351,33 @@ export async function uploadArticleImage(file: File): Promise<string> {
   // 3. Fallback: devolve a versão otimizada leve (< 150KB), evitando QuotaExceededError
   return optimizedDataUrl;
 }
+
+export async function addArticleComment(articleId: string, comment: Comment): Promise<void> {
+  const current = getLocalArticles();
+  const updated = current.map((a) => {
+    if (a.id === articleId) {
+      return {
+        ...a,
+        commentsCount: (a.commentsCount || 0) + 1,
+        comments: [comment, ...(a.comments || [])],
+      };
+    }
+    return a;
+  });
+  saveLocalArticles(updated);
+}
+
+export async function toggleArticleLike(articleId: string, increment: boolean): Promise<void> {
+  const current = getLocalArticles();
+  const updated = current.map((a) => {
+    if (a.id === articleId) {
+      return {
+        ...a,
+        likes: Math.max(0, a.likes + (increment ? 1 : -1)),
+      };
+    }
+    return a;
+  });
+  saveLocalArticles(updated);
+}
+

@@ -4,7 +4,18 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  Routes,
+  Route,
+  Outlet,
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+  useOutletContext,
+} from 'react-router-dom';
 import { NavPage, Article, MagazineEdition, CategoryId, GalleryItem, VideoItem, ConsularDocument } from './types';
+import { resolvePageFromPath, articlePath, PAGE_TO_PATH } from './lib/routes';
 import { initialArticles } from './data/articles';
 import { initialGalleryItems } from './data/galleryData';
 import { initialVideoItems } from './data/videosData';
@@ -31,7 +42,7 @@ import { WondersPage } from './components/Pages/WondersPage';
 import { ConsularServicesPage } from './components/Pages/ConsularServicesPage';
 import { ArticleCard } from './components/ArticleCard';
 import { AdminGate } from './components/Admin/AdminGate';
-import { fetchArticles } from './lib/articleService';
+import { fetchArticles, addArticleComment, toggleArticleLike } from './lib/articleService';
 import { fetchGalleryItems, getLocalGallery } from './lib/galleryService';
 import { fetchVideoItems, getLocalVideos } from './lib/videoService';
 import { fetchMagazineEditions, getLocalEditions } from './lib/editionService';
@@ -40,26 +51,19 @@ import { fetchConsularDocuments, getLocalConsularDocuments } from './lib/consula
 import { isSupabaseConfigured } from './lib/supabase';
 import { Search, X, FolderSearch } from 'lucide-react';
 
-function getInitialPage(): NavPage {
-  if (typeof window !== 'undefined') {
-    const path = window.location.pathname.toLowerCase().replace(/\/$/, '');
-    const hash = window.location.hash.toLowerCase().replace(/^#\/?/, '');
-    if (path === '/admin' || hash === 'admin') {
-      return 'admin';
-    }
-  }
-  return 'home';
-}
-
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<NavPage>(getInitialPage);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentPage = resolvePageFromPath(location.pathname);
+
   const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(() => {
     if (typeof window !== 'undefined') {
       try {
         return getLocalGallery();
       } catch {
-        // fallback
+        return initialGalleryItems;
       }
     }
     return initialGalleryItems;
@@ -69,7 +73,7 @@ export default function App() {
       try {
         return getLocalVideos();
       } catch {
-        // fallback
+        return initialVideoItems;
       }
     }
     return initialVideoItems;
@@ -79,7 +83,7 @@ export default function App() {
       try {
         return getLocalEditions();
       } catch {
-        // fallback
+        return initialMagazineEditions;
       }
     }
     return initialMagazineEditions;
@@ -89,7 +93,7 @@ export default function App() {
       try {
         return getLocalWonders();
       } catch {
-        // fallback
+        return angolaNaturalWonders;
       }
     }
     return angolaNaturalWonders;
@@ -99,27 +103,25 @@ export default function App() {
       try {
         return getLocalConsularDocuments();
       } catch {
-        // fallback
+        return consularDocuments;
       }
     }
     return consularDocuments;
   });
-  const [articlesLoading, setArticlesLoading] = useState(isSupabaseConfigured);
+
+  const [articlesLoading, setArticlesLoading] = useState(false);
   const [articlesError, setArticlesError] = useState<string | null>(null);
 
   const loadArticlesFromBackend = useCallback(async () => {
     setArticlesLoading(true);
-    setArticlesError(null);
     try {
-      const fromDb = await fetchArticles();
-      if (fromDb && fromDb.length > 0) {
-        setArticles(fromDb);
-      } else {
-        setArticles(initialArticles);
+      const remote = await fetchArticles();
+      if (remote && remote.length > 0) {
+        setArticles(remote);
+        setArticlesError(null);
       }
-    } catch (err) {
-      console.warn('[Mosaico Angolano] Erro ao carregar notícias, a utilizar catálogo padrão:', err);
-      setArticles(initialArticles);
+    } catch (e: any) {
+      console.warn('Usando artigos locais resilientes:', e);
     } finally {
       setArticlesLoading(false);
     }
@@ -127,46 +129,46 @@ export default function App() {
 
   const loadGalleryFromBackend = useCallback(async () => {
     try {
-      const items = await fetchGalleryItems();
-      setGalleryItems(items);
-    } catch (err) {
-      console.error('Erro ao carregar galeria:', err);
+      const remote = await fetchGalleryItems();
+      if (remote && remote.length > 0) setGalleryItems(remote);
+    } catch {
+      // fallback
     }
   }, []);
 
   const loadVideosFromBackend = useCallback(async () => {
     try {
-      const items = await fetchVideoItems();
-      setVideoItems(items);
-    } catch (err) {
-      console.error('Erro ao carregar vídeos:', err);
+      const remote = await fetchVideoItems();
+      if (remote && remote.length > 0) setVideoItems(remote);
+    } catch {
+      // fallback
     }
   }, []);
 
   const loadEditionsFromBackend = useCallback(async () => {
     try {
-      const items = await fetchMagazineEditions();
-      setMagazineEditionsList(items);
-    } catch (err) {
-      console.error('Erro ao carregar edições da revista:', err);
+      const remote = await fetchMagazineEditions();
+      if (remote && remote.length > 0) setMagazineEditionsList(remote);
+    } catch {
+      // fallback
     }
   }, []);
 
   const loadWondersFromBackend = useCallback(async () => {
     try {
-      const items = await fetchNaturalWonders();
-      setNaturalWondersList(items);
-    } catch (err) {
-      console.error('Erro ao carregar maravilhas de Angola:', err);
+      const remote = await fetchNaturalWonders();
+      if (remote && remote.length > 0) setNaturalWondersList(remote);
+    } catch {
+      // fallback
     }
   }, []);
 
   const loadConsularDocsFromBackend = useCallback(async () => {
     try {
-      const items = await fetchConsularDocuments();
-      setConsularDocumentsList(items);
-    } catch (err) {
-      console.error('Erro ao carregar documentos consulares:', err);
+      const remote = await fetchConsularDocuments();
+      if (remote && remote.length > 0) setConsularDocumentsList(remote);
+    } catch {
+      // fallback
     }
   }, []);
 
@@ -185,35 +187,6 @@ export default function App() {
     loadWondersFromBackend,
     loadConsularDocsFromBackend,
   ]);
-
-  useEffect(() => {
-    const handleUrlChange = () => {
-      const path = window.location.pathname.toLowerCase().replace(/\/$/, '');
-      const hash = window.location.hash.toLowerCase().replace(/^#\/?/, '');
-      const onAdmin = path === '/admin' || hash === 'admin';
-      setCurrentPage((prev) => {
-        if (onAdmin) return 'admin';
-        return prev === 'admin' ? 'home' : prev;
-      });
-    };
-    window.addEventListener('popstate', handleUrlChange);
-    window.addEventListener('hashchange', handleUrlChange);
-    return () => {
-      window.removeEventListener('popstate', handleUrlChange);
-      window.removeEventListener('hashchange', handleUrlChange);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const wantsAdminPath = currentPage === 'admin';
-    const isOnAdminPath = window.location.pathname.replace(/\/$/, '') === '/admin';
-    if (wantsAdminPath && !isOnAdminPath) {
-      window.history.pushState({}, '', '/admin');
-    } else if (!wantsAdminPath && isOnAdminPath) {
-      window.history.pushState({}, '', '/');
-    }
-  }, [currentPage]);
 
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(() => {
     try {
@@ -235,8 +208,24 @@ export default function App() {
     return new Set<string>();
   });
 
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const searchQuery = searchParams.get('q') ?? '';
+  const setSearchQuery = useCallback(
+    (q: string) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (q) {
+            next.set('q', q);
+          } else {
+            next.delete('q');
+          }
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
   const [selectedEdition, setSelectedEdition] = useState<MagazineEdition | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -258,9 +247,6 @@ export default function App() {
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage((prev) => (prev === msg ? null : prev));
-    }, 4000);
   };
 
   const handleToggleBookmark = (articleId: string) => {
@@ -288,12 +274,15 @@ export default function App() {
         showToast('Gosto registado no artigo!');
       }
 
+      const increment = !isAlreadyLiked;
+      toggleArticleLike(articleId, increment);
+
       setArticles((prevArticles) =>
         prevArticles.map((art) => {
           if (art.id === articleId) {
             return {
               ...art,
-              likes: Math.max(0, art.likes + (isAlreadyLiked ? -1 : 1)),
+              likes: Math.max(0, art.likes + (increment ? 1 : -1)),
             };
           }
           return art;
@@ -314,6 +303,8 @@ export default function App() {
       likedByUser: false,
     };
 
+    addArticleComment(articleId, newCommentObj);
+
     setArticles((prevArticles) =>
       prevArticles.map((art) => {
         if (art.id === articleId) {
@@ -327,17 +318,6 @@ export default function App() {
         return art;
       })
     );
-
-    setSelectedArticle((prev) => {
-      if (prev && prev.id === articleId) {
-        return {
-          ...prev,
-          commentsCount: (prev.commentsCount || 0) + 1,
-          comments: [newCommentObj, ...(prev.comments || [])],
-        };
-      }
-      return prev;
-    });
   };
 
   const handleLikeComment = (articleId: string, commentId: string) => {
@@ -360,24 +340,6 @@ export default function App() {
         return art;
       })
     );
-
-    setSelectedArticle((prev) => {
-      if (prev && prev.id === articleId && prev.comments) {
-        const updated = prev.comments.map((c) => {
-          if (c.id === commentId) {
-            const liked = !c.likedByUser;
-            return {
-              ...c,
-              likedByUser: liked,
-              likes: c.likes + (liked ? 1 : -1),
-            };
-          }
-          return c;
-        });
-        return { ...prev, comments: updated };
-      }
-      return prev;
-    });
   };
 
   const handleClearAllFavorites = () => {
@@ -404,7 +366,6 @@ export default function App() {
     if (nonCarousel.length >= 2) {
       return nonCarousel.slice(0, 2);
     }
-    // Fallback se houver poucos artigos fora do carrossel
     return publicArticles.filter((a) => a.id !== carouselArticles[0]?.id).slice(0, 2);
   }, [publicArticles, carouselArticles]);
 
@@ -434,8 +395,7 @@ export default function App() {
   }, [publicArticles, searchQuery]);
 
   const handleNavigate = (page: NavPage) => {
-    setCurrentPage(page);
-    setSelectedArticle(null);
+    navigate(PAGE_TO_PATH[page]);
     setSearchQuery('');
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -443,9 +403,11 @@ export default function App() {
   };
 
   const handleOpenArticle = (art: Article) => {
-    const fresh = articles.find((a) => a.id === art.id) || art;
-    setSelectedArticle(fresh);
+    navigate(articlePath(art.id));
     setSearchQuery('');
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const categoryConfigs: Partial<
@@ -533,257 +495,464 @@ export default function App() {
     [consularDocumentsList]
   );
 
-  if (currentPage === 'admin') {
-    return (
-      <AdminGate
-        articles={articles}
-        galleryItems={galleryItems}
-        videoItems={videoItems}
-        magazineEditions={magazineEditionsList}
-        naturalWonders={naturalWondersList}
-        consularDocs={consularDocumentsList}
-        articlesLoading={articlesLoading}
-        articlesError={articlesError}
-        onArticlesChanged={loadArticlesFromBackend}
-        onGalleryChanged={loadGalleryFromBackend}
-        onVideosChanged={loadVideosFromBackend}
-        onEditionsChanged={loadEditionsFromBackend}
-        onWondersChanged={loadWondersFromBackend}
-        onConsularDocsChanged={loadConsularDocsFromBackend}
-        onGoToSite={() => handleNavigate('home')}
-        onShowToast={showToast}
+  const outletContext: PageOutletContext = {
+    articles,
+    publicArticles,
+    carouselArticles,
+    secondaryArticles,
+    latestArticles,
+    favoriteArticles,
+    searchResults,
+    magazineEditionsList,
+    publicMagazineEditions,
+    publicGalleryItems,
+    publicVideoItems,
+    publicNaturalWonders,
+    publicConsularDocuments,
+    categoryConfigs,
+    bookmarkedIds,
+    likedIds,
+    handleOpenArticle,
+    handleNavigate,
+    handleToggleBookmark,
+    handleToggleLike,
+    handleAddComment,
+    handleLikeComment,
+    handleClearAllFavorites,
+    showToast,
+    setSelectedEdition,
+  };
+
+  return (
+    <Routes>
+      {/* ÁREA RESERVADA — sem cabeçalho/rodapé públicos */}
+      <Route
+        path="/admin"
+        element={
+          <AdminGate
+            articles={articles}
+            galleryItems={galleryItems}
+            videoItems={videoItems}
+            magazineEditions={magazineEditionsList}
+            naturalWonders={naturalWondersList}
+            consularDocs={consularDocumentsList}
+            articlesLoading={articlesLoading}
+            articlesError={articlesError}
+            onArticlesChanged={loadArticlesFromBackend}
+            onGalleryChanged={loadGalleryFromBackend}
+            onVideosChanged={loadVideosFromBackend}
+            onEditionsChanged={loadEditionsFromBackend}
+            onWondersChanged={loadWondersFromBackend}
+            onConsularDocsChanged={loadConsularDocsFromBackend}
+            onGoToSite={() => handleNavigate('home')}
+            onShowToast={showToast}
+          />
+        }
       />
+
+      {/* SITE PÚBLICO — cada página abaixo tem o seu próprio URL partilhável */}
+      <Route
+        element={
+          <SiteLayout
+            currentPage={currentPage}
+            favoritesCount={bookmarkedIds.size}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onNavigate={handleNavigate}
+            onShowToast={showToast}
+            articles={articles}
+            onOpenArticle={handleOpenArticle}
+            selectedEdition={selectedEdition}
+            onCloseEdition={() => setSelectedEdition(null)}
+            toastMessage={toastMessage}
+            onCloseToast={() => setToastMessage(null)}
+            context={outletContext}
+          />
+        }
+      >
+        <Route path="/noticia/:id" element={<ArticleRoute />} />
+        <Route path="*" element={<PageSwitch currentPage={currentPage} />} />
+      </Route>
+    </Routes>
+  );
+}
+
+/** Dados e ações partilhados por todas as páginas do site público. */
+interface PageOutletContext {
+  articles: Article[];
+  publicArticles: Article[];
+  carouselArticles: Article[];
+  secondaryArticles: Article[];
+  latestArticles: Article[];
+  favoriteArticles: Article[];
+  searchResults: Article[];
+  magazineEditionsList: MagazineEdition[];
+  publicMagazineEditions: MagazineEdition[];
+  publicGalleryItems: GalleryItem[];
+  publicVideoItems: VideoItem[];
+  publicNaturalWonders: NaturalWonder[];
+  publicConsularDocuments: ConsularDocument[];
+  categoryConfigs: Partial<Record<CategoryId, { title: string; subtitle: string }>>;
+  bookmarkedIds: Set<string>;
+  likedIds: Set<string>;
+  handleOpenArticle: (art: Article) => void;
+  handleNavigate: (page: NavPage) => void;
+  handleToggleBookmark: (articleId: string) => void;
+  handleToggleLike: (articleId: string) => void;
+  handleAddComment: (articleId: string, commentText: string, authorName: string) => void;
+  handleLikeComment: (articleId: string, commentId: string) => void;
+  handleClearAllFavorites: () => void;
+  showToast: (msg: string) => void;
+  setSelectedEdition: (edition: MagazineEdition | null) => void;
+}
+
+interface SiteLayoutProps {
+  currentPage: NavPage;
+  favoritesCount: number;
+  searchQuery: string;
+  onSearchChange: (q: string) => void;
+  onNavigate: (page: NavPage) => void;
+  onShowToast: (msg: string) => void;
+  articles: Article[];
+  onOpenArticle: (art: Article) => void;
+  selectedEdition: MagazineEdition | null;
+  onCloseEdition: () => void;
+  toastMessage: string | null;
+  onCloseToast: () => void;
+  context: PageOutletContext;
+}
+
+/**
+ * Casca comum a todo o site público (cabeçalho, rodapé, modais).
+ * O conteúdo específico de cada URL é renderizado no <Outlet /> pelas
+ * rotas filhas (ArticleRoute ou PageSwitch).
+ */
+function SiteLayout({
+  currentPage,
+  favoritesCount,
+  searchQuery,
+  onSearchChange,
+  onNavigate,
+  onShowToast,
+  articles,
+  onOpenArticle,
+  selectedEdition,
+  onCloseEdition,
+  toastMessage,
+  onCloseToast,
+  context,
+}: SiteLayoutProps) {
+  const location = useLocation();
+  const isArticleRoute = location.pathname.toLowerCase().startsWith('/noticia/');
+  const showSearchOverlay = !isArticleRoute && searchQuery.trim().length > 0;
+
+  return (
+    <div className="min-h-screen flex flex-col bg-[#f4f5f7] text-[#333]">
+      <Header
+        currentPage={currentPage}
+        onNavigate={onNavigate}
+        favoritesCount={favoritesCount}
+        searchQuery={searchQuery}
+        onSearchChange={onSearchChange}
+        onOpenArticle={(id) => {
+          const found = articles.find((a) => a.id === id);
+          if (found) onOpenArticle(found);
+        }}
+      />
+
+      <main className="max-w-[1240px] w-full mx-auto px-4 sm:px-6 flex-1">
+        {showSearchOverlay ? (
+          <SearchResultsBlock
+            searchQuery={searchQuery}
+            results={context.searchResults}
+            onClearSearch={() => onSearchChange('')}
+            context={context}
+          />
+        ) : (
+          <Outlet context={context} />
+        )}
+      </main>
+
+      <Footer onNavigate={onNavigate} onShowToast={onShowToast} />
+
+      {selectedEdition && (
+        <MagazineReaderModal
+          edition={selectedEdition}
+          onClose={onCloseEdition}
+          onShowToast={onShowToast}
+        />
+      )}
+
+      <Toast message={toastMessage} onClose={onCloseToast} />
+    </div>
+  );
+}
+
+function SearchResultsBlock({
+  searchQuery,
+  results,
+  onClearSearch,
+  context,
+}: {
+  searchQuery: string;
+  results: Article[];
+  onClearSearch: () => void;
+  context: PageOutletContext;
+}) {
+  return (
+    <div className="py-6 sm:py-8 space-y-6">
+      <div className="bg-white p-6 rounded-2xl border-l-6 border-[#d9251d] shadow-xs flex items-center justify-between">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-[#111] flex items-center gap-2">
+            <Search className="w-5 h-5 text-[#d9251d]" />
+            <span>Resultados da Pesquisa: "{searchQuery}"</span>
+          </h1>
+          <p className="text-xs text-gray-500 mt-1">
+            Encontrados {results.length} artigos correspondentes
+          </p>
+        </div>
+        <button
+          onClick={onClearSearch}
+          className="text-xs font-semibold text-gray-500 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+        >
+          <X className="w-3.5 h-3.5" />
+          <span>Limpar Pesquisa</span>
+        </button>
+      </div>
+
+      {results.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {results.map((art) => (
+            <ArticleCard
+              key={art.id}
+              article={art}
+              onOpenArticle={context.handleOpenArticle}
+              onToggleBookmark={context.handleToggleBookmark}
+              onToggleLike={context.handleToggleLike}
+              isBookmarked={context.bookmarkedIds.has(art.id)}
+              isLiked={context.likedIds.has(art.id)}
+              showDate={true}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-16 bg-white rounded-2xl border border-gray-200 shadow-xs">
+          <FolderSearch className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <h3 className="text-base font-bold text-gray-800 mb-1">
+            Nenhum artigo encontrado
+          </h3>
+          <p className="text-xs text-gray-500">
+            Tente pesquisar por outros termos como "turismo", "diplomacia", "vistos" ou "sustentabilidade".
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Rota /noticia/:id — URL próprio e partilhável para cada artigo. */
+function ArticleRoute() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const context = useOutletContext<PageOutletContext>();
+  const article = context.articles.find((a) => a.id === id);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [id]);
+
+  if (!article) {
+    return (
+      <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-xs my-8">
+        <h1 className="text-lg font-bold text-gray-800 mb-2">Artigo não encontrado</h1>
+        <p className="text-sm text-gray-500 mb-4">
+          Este artigo pode ter sido removido ou o link está incorrecto.
+        </p>
+        <button
+          onClick={() => navigate('/')}
+          className="text-xs font-semibold text-white bg-[#d9251d] hover:bg-[#b81e17] px-4 py-2 rounded-lg cursor-pointer transition-colors"
+        >
+          Voltar à página inicial
+        </button>
+      </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f4f5f7] text-[#333]">
-      {/* HEADER */}
-      <Header
-        currentPage={currentPage}
-        onNavigate={handleNavigate}
-        favoritesCount={bookmarkedIds.size}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onOpenArticle={(id) => {
-          const found = articles.find((a) => a.id === id);
-          if (found) handleOpenArticle(found);
-        }}
-      />
+    <ArticlePage
+      article={article}
+      onBack={() => navigate(-1)}
+      onNavigate={context.handleNavigate}
+      onToggleBookmark={context.handleToggleBookmark}
+      onToggleLike={context.handleToggleLike}
+      onAddComment={context.handleAddComment}
+      onLikeComment={context.handleLikeComment}
+      isBookmarked={context.bookmarkedIds.has(article.id)}
+      isLiked={context.likedIds.has(article.id)}
+      onShowToast={context.showToast}
+      onOpenArticle={context.handleOpenArticle}
+      allArticles={context.articles}
+    />
+  );
+}
 
-      {/* MAIN CONTAINER */}
-      <main className="max-w-[1240px] w-full mx-auto px-4 sm:px-6 flex-1">
-        {selectedArticle ? (
-          <ArticlePage
-            article={selectedArticle}
-            onBack={() => setSelectedArticle(null)}
-            onNavigate={handleNavigate}
-            onToggleBookmark={handleToggleBookmark}
-            onToggleLike={handleToggleLike}
-            onAddComment={handleAddComment}
-            onLikeComment={handleLikeComment}
-            isBookmarked={bookmarkedIds.has(selectedArticle.id)}
-            isLiked={likedIds.has(selectedArticle.id)}
-            onShowToast={showToast}
-            onOpenArticle={handleOpenArticle}
-            allArticles={articles}
-          />
-        ) : searchQuery.trim() ? (
-          <div className="py-6 sm:py-8 space-y-6">
-            <div className="bg-white p-6 rounded-2xl border-l-6 border-[#d9251d] shadow-xs flex items-center justify-between">
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-[#111] flex items-center gap-2">
-                  <Search className="w-5 h-5 text-[#d9251d]" />
-                  <span>Resultados da Pesquisa: "{searchQuery}"</span>
-                </h1>
-                <p className="text-xs text-gray-500 mt-1">
-                  Encontrados {searchResults.length} artigos correspondentes
-                </p>
-              </div>
-              <button
-                onClick={() => setSearchQuery('')}
-                className="text-xs font-semibold text-gray-500 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
-              >
-                <X className="w-3.5 h-3.5" />
-                <span>Limpar Pesquisa</span>
-              </button>
-            </div>
+/** Todas as restantes páginas do site — o URL já determina qual delas mostrar. */
+function PageSwitch({ currentPage }: { currentPage: NavPage }) {
+  const context = useOutletContext<PageOutletContext>();
+  const {
+    publicArticles,
+    carouselArticles,
+    secondaryArticles,
+    latestArticles,
+    favoriteArticles,
+    magazineEditionsList,
+    publicMagazineEditions,
+    publicGalleryItems,
+    publicVideoItems,
+    publicNaturalWonders,
+    publicConsularDocuments,
+    categoryConfigs,
+    bookmarkedIds,
+    likedIds,
+    handleOpenArticle,
+    handleNavigate,
+    handleToggleBookmark,
+    handleToggleLike,
+    handleClearAllFavorites,
+    showToast,
+    setSelectedEdition,
+  } = context;
 
-            {searchResults.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {searchResults.map((art) => (
-                  <ArticleCard
-                    key={art.id}
-                    article={art}
-                    onOpenArticle={handleOpenArticle}
-                    onToggleBookmark={handleToggleBookmark}
-                    onToggleLike={handleToggleLike}
-                    isBookmarked={bookmarkedIds.has(art.id)}
-                    isLiked={likedIds.has(art.id)}
-                    showDate={true}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-16 bg-white rounded-2xl border border-gray-200 shadow-xs">
-                <FolderSearch className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <h3 className="text-base font-bold text-gray-800 mb-1">
-                  Nenhum artigo encontrado
-                </h3>
-                <p className="text-xs text-gray-500">
-                  Tente pesquisar por outros termos como "turismo", "diplomacia", "vistos" ou "sustentabilidade".
-                </p>
-              </div>
-            )}
-          </div>
-        ) : (
-          <>
-            {/* HOME PAGE */}
-            {currentPage === 'home' && (
-              <HomePage
-                carouselArticles={carouselArticles}
-                secondaryArticles={secondaryArticles}
-                latestArticles={latestArticles}
-                magazineEditions={publicMagazineEditions}
-                upcomingEvents={upcomingEvents}
-                galleryItems={publicGalleryItems}
-                wonders={publicNaturalWonders}
-                onOpenArticle={handleOpenArticle}
-                onOpenEdition={setSelectedEdition}
-                onToggleBookmark={handleToggleBookmark}
-                onToggleLike={handleToggleLike}
-                bookmarkedIds={bookmarkedIds}
-                likedIds={likedIds}
-                onNavigate={handleNavigate}
-              />
-            )}
+  return (
+    <>
+      {/* HOME PAGE */}
+      {currentPage === 'home' && (
+        <HomePage
+          carouselArticles={carouselArticles}
+          secondaryArticles={secondaryArticles}
+          latestArticles={latestArticles}
+          magazineEditions={publicMagazineEditions}
+          upcomingEvents={upcomingEvents}
+          galleryItems={publicGalleryItems}
+          wonders={publicNaturalWonders}
+          onOpenArticle={handleOpenArticle}
+          onOpenEdition={setSelectedEdition}
+          onToggleBookmark={handleToggleBookmark}
+          onToggleLike={handleToggleLike}
+          bookmarkedIds={bookmarkedIds}
+          likedIds={likedIds}
+          onNavigate={handleNavigate}
+        />
+      )}
 
-            {/* SOBRE A EMBAIXADA */}
-            {currentPage === 'sobre' && <AboutPage onShowToast={showToast} />}
+      {/* SOBRE A EMBAIXADA */}
+      {currentPage === 'sobre' && <AboutPage onShowToast={showToast} />}
 
-            {/* SERVIÇOS CONSULARES E DOCUMENTAÇÃO */}
-            {currentPage === 'panorama-consular' && (
-              <ConsularServicesPage
-                documents={publicConsularDocuments}
-                articles={publicArticles}
-                onOpenArticle={handleOpenArticle}
-                onShowToast={showToast}
-              />
-            )}
-
-            {/* CATEGORY PAGES */}
-            {currentPage in categoryConfigs && currentPage !== 'panorama-consular' && (
-              <CategoryPage
-                categoryId={currentPage as CategoryId}
-                title={categoryConfigs[currentPage as CategoryId]!.title}
-                subtitle={categoryConfigs[currentPage as CategoryId]!.subtitle}
-                articles={currentPage === 'todas' ? publicArticles : publicArticles.filter((a) => {
-                  if (a.categoryId === currentPage) return true;
-                  if (currentPage === 'politica' && (a.categoryId === 'analise-global' || a.category.toLowerCase().includes('politic') || a.category.toLowerCase().includes('análise'))) return true;
-                  if (currentPage === 'economia' && (a.categoryId === 'economia' || a.category.toLowerCase().includes('economi'))) return true;
-                  if (currentPage === 'kamba-cultura' && (a.categoryId === 'kamba-cultura' || a.category.toLowerCase().includes('kamba'))) return true;
-                  if (currentPage === 'turismo' && (a.categoryId === 'turismo' || a.category.toLowerCase().includes('turismo'))) return true;
-                  return a.category.toLowerCase().includes(currentPage.replace('-', ' '));
-                })}
-                onOpenArticle={handleOpenArticle}
-                onToggleBookmark={handleToggleBookmark}
-                onToggleLike={handleToggleLike}
-                bookmarkedIds={bookmarkedIds}
-                likedIds={likedIds}
-              />
-            )}
-
-            {/* MEU FEED */}
-            {currentPage === 'feed' && (
-              <FeedPage
-                articles={publicArticles}
-                onOpenArticle={handleOpenArticle}
-                onToggleBookmark={handleToggleBookmark}
-                onToggleLike={handleToggleLike}
-                bookmarkedIds={bookmarkedIds}
-                likedIds={likedIds}
-              />
-            )}
-
-            {/* FAVORITOS */}
-            {currentPage === 'favorites' && (
-              <FavoritesPage
-                favoriteArticles={favoriteArticles}
-                onOpenArticle={handleOpenArticle}
-                onToggleBookmark={handleToggleBookmark}
-                onToggleLike={handleToggleLike}
-                bookmarkedIds={bookmarkedIds}
-                likedIds={likedIds}
-                onClearAllFavorites={handleClearAllFavorites}
-              />
-            )}
-
-            {/* HISTÓRIA */}
-            {currentPage === 'history' && <HistoryPage />}
-
-            {/* BLOG */}
-            {currentPage === 'blog' && (
-              <BlogPage
-                articles={publicArticles.filter((a) => a.categoryId === 'blog' || a.category.includes('Opinião'))}
-                onOpenArticle={handleOpenArticle}
-                onToggleBookmark={handleToggleBookmark}
-                onToggleLike={handleToggleLike}
-                bookmarkedIds={bookmarkedIds}
-                likedIds={likedIds}
-              />
-            )}
-
-            {/* EDIÇÕES REVISTA */}
-            {currentPage === 'edicoes' && (
-              <EditionsPage
-                editions={magazineEditionsList}
-                onOpenEdition={setSelectedEdition}
-                onShowToast={showToast}
-              />
-            )}
-
-            {/* IMAGENS (GALERIA) */}
-            {currentPage === 'galeria' && (
-              <GalleryPage items={publicGalleryItems} onShowToast={showToast} />
-            )}
-
-            {/* VÍDEOS */}
-            {currentPage === 'videos' && (
-              <VideosPage items={publicVideoItems} onShowToast={showToast} />
-            )}
-
-            {/* AS 7 MARAVILHAS DE ANGOLA & GUIA TURÍSTICO */}
-            {currentPage === 'maravilhas' && (
-              <WondersPage
-                wonders={publicNaturalWonders}
-                onNavigate={handleNavigate}
-                articles={publicArticles}
-                onOpenArticle={handleOpenArticle}
-                onToggleBookmark={handleToggleBookmark}
-                onToggleLike={handleToggleLike}
-                bookmarkedIds={bookmarkedIds}
-                likedIds={likedIds}
-                onShowToast={showToast}
-              />
-            )}
-          </>
-        )}
-      </main>
-
-      {/* FOOTER */}
-      <Footer onNavigate={handleNavigate} onShowToast={showToast} />
-
-      {/* MAGAZINE DIGITAL FLIPBOOK READER MODAL */}
-      {selectedEdition && (
-        <MagazineReaderModal
-          edition={selectedEdition}
-          onClose={() => setSelectedEdition(null)}
+      {/* SERVIÇOS CONSULARES E DOCUMENTAÇÃO */}
+      {currentPage === 'panorama-consular' && (
+        <ConsularServicesPage
+          documents={publicConsularDocuments}
+          articles={publicArticles}
+          onOpenArticle={handleOpenArticle}
           onShowToast={showToast}
         />
       )}
 
-      {/* TOAST NOTIFICATION */}
-      <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
-    </div>
+      {/* CATEGORY PAGES */}
+      {currentPage in categoryConfigs && currentPage !== 'panorama-consular' && (
+        <CategoryPage
+          categoryId={currentPage as CategoryId}
+          title={categoryConfigs[currentPage as CategoryId]!.title}
+          subtitle={categoryConfigs[currentPage as CategoryId]!.subtitle}
+          articles={currentPage === 'todas' ? publicArticles : publicArticles.filter((a) => {
+            if (a.categoryId === currentPage) return true;
+            if (currentPage === 'politica' && (a.categoryId === 'analise-global' || a.category.toLowerCase().includes('politic') || a.category.toLowerCase().includes('análise'))) return true;
+            if (currentPage === 'economia' && (a.categoryId === 'economia' || a.category.toLowerCase().includes('economi'))) return true;
+            if (currentPage === 'kamba-cultura' && (a.categoryId === 'kamba-cultura' || a.category.toLowerCase().includes('kamba'))) return true;
+            if (currentPage === 'turismo' && (a.categoryId === 'turismo' || a.category.toLowerCase().includes('turismo'))) return true;
+            return a.category.toLowerCase().includes(currentPage.replace('-', ' '));
+          })}
+          onOpenArticle={handleOpenArticle}
+          onToggleBookmark={handleToggleBookmark}
+          onToggleLike={handleToggleLike}
+          bookmarkedIds={bookmarkedIds}
+          likedIds={likedIds}
+        />
+      )}
+
+      {/* MEU FEED */}
+      {currentPage === 'feed' && (
+        <FeedPage
+          articles={publicArticles}
+          onOpenArticle={handleOpenArticle}
+          onToggleBookmark={handleToggleBookmark}
+          onToggleLike={handleToggleLike}
+          bookmarkedIds={bookmarkedIds}
+          likedIds={likedIds}
+        />
+      )}
+
+      {/* FAVORITOS */}
+      {currentPage === 'favorites' && (
+        <FavoritesPage
+          favoriteArticles={favoriteArticles}
+          onOpenArticle={handleOpenArticle}
+          onToggleBookmark={handleToggleBookmark}
+          onToggleLike={handleToggleLike}
+          bookmarkedIds={bookmarkedIds}
+          likedIds={likedIds}
+          onClearAllFavorites={handleClearAllFavorites}
+        />
+      )}
+
+      {/* HISTÓRIA */}
+      {currentPage === 'history' && <HistoryPage />}
+
+      {/* BLOG */}
+      {currentPage === 'blog' && (
+        <BlogPage
+          articles={publicArticles.filter((a) => a.categoryId === 'blog' || a.category.includes('Opinião'))}
+          onOpenArticle={handleOpenArticle}
+          onToggleBookmark={handleToggleBookmark}
+          onToggleLike={handleToggleLike}
+          bookmarkedIds={bookmarkedIds}
+          likedIds={likedIds}
+        />
+      )}
+
+      {/* EDIÇÕES REVISTA */}
+      {currentPage === 'edicoes' && (
+        <EditionsPage
+          editions={magazineEditionsList}
+          onOpenEdition={setSelectedEdition}
+          onShowToast={showToast}
+        />
+      )}
+
+      {/* IMAGENS (GALERIA) */}
+      {currentPage === 'galeria' && (
+        <GalleryPage items={publicGalleryItems} onShowToast={showToast} />
+      )}
+
+      {/* VÍDEOS */}
+      {currentPage === 'videos' && (
+        <VideosPage items={publicVideoItems} onShowToast={showToast} />
+      )}
+
+      {/* AS 7 MARAVILHAS DE ANGOLA & GUIA TURÍSTICO */}
+      {currentPage === 'maravilhas' && (
+        <WondersPage
+          wonders={publicNaturalWonders}
+          onNavigate={handleNavigate}
+          articles={publicArticles}
+          onOpenArticle={handleOpenArticle}
+          onToggleBookmark={handleToggleBookmark}
+          onToggleLike={handleToggleLike}
+          bookmarkedIds={bookmarkedIds}
+          likedIds={likedIds}
+          onShowToast={showToast}
+        />
+      )}
+    </>
   );
 }
