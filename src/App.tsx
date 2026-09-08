@@ -395,8 +395,8 @@ export default function App() {
   }, [publicArticles, searchQuery]);
 
   const handleNavigate = (page: NavPage) => {
-    navigate(PAGE_TO_PATH[page]);
-    setSearchQuery('');
+    const targetPath = PAGE_TO_PATH[page] || '/';
+    navigate(targetPath);
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -404,7 +404,6 @@ export default function App() {
 
   const handleOpenArticle = (art: Article) => {
     navigate(articlePath(art.id));
-    setSearchQuery('');
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -571,7 +570,7 @@ export default function App() {
         }
       >
         <Route path="/noticia/:id" element={<ArticleRoute />} />
-        <Route path="*" element={<PageSwitch currentPage={currentPage} />} />
+        <Route path="*" element={<PageSwitch />} />
       </Route>
     </Routes>
   );
@@ -643,13 +642,14 @@ function SiteLayout({
   context,
 }: SiteLayoutProps) {
   const location = useLocation();
+  const activePage = resolvePageFromPath(location.pathname);
   const isArticleRoute = location.pathname.toLowerCase().startsWith('/noticia/');
   const showSearchOverlay = !isArticleRoute && searchQuery.trim().length > 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f4f5f7] text-[#333]">
       <Header
-        currentPage={currentPage}
+        currentPage={activePage}
         onNavigate={onNavigate}
         favoritesCount={favoritesCount}
         searchQuery={searchQuery}
@@ -797,7 +797,9 @@ function ArticleRoute() {
 }
 
 /** Todas as restantes páginas do site — o URL já determina qual delas mostrar. */
-function PageSwitch({ currentPage }: { currentPage: NavPage }) {
+function PageSwitch() {
+  const location = useLocation();
+  const currentPage = resolvePageFromPath(location.pathname);
   const context = useOutletContext<PageOutletContext>();
   const {
     publicArticles,
