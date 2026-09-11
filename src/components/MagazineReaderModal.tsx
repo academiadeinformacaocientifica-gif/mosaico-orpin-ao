@@ -30,7 +30,11 @@ export const MagazineReaderModal: React.FC<MagazineReaderModalProps> = ({
   const totalSimulatedPages = 12;
 
   const handleDownload = () => {
-    onShowToast(`A preparar transferência em PDF da ${edition.title}...`);
+    if (edition.pdfUrl) {
+      window.open(edition.pdfUrl, '_blank');
+    } else {
+      onShowToast(`A preparar transferência em PDF da ${edition.title}...`);
+    }
   };
 
   return (
@@ -116,7 +120,7 @@ export const MagazineReaderModal: React.FC<MagazineReaderModalProps> = ({
                 Índice & Destaques Editoriais
               </span>
               <h2 className="text-xl font-bold text-white mt-1">{edition.theme}</h2>
-              <p className="text-xs text-gray-300 mt-2 leading-relaxed italic border-l-2 border-[#d9251d] pl-3">
+              <p className="text-xs text-gray-300 mt-2 leading-relaxed italic border-l-2 border-[#d9251d] pl-3 whitespace-pre-line max-h-48 overflow-y-auto">
                 "{edition.editorialNote}"
               </p>
             </div>

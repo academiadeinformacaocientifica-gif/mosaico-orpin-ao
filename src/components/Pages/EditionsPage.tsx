@@ -93,7 +93,7 @@ export const EditionsPage: React.FC<EditionsPageProps> = ({
                     {ed.title}
                   </h2>
 
-                  <p className="text-xs sm:text-sm text-gray-600 italic mb-4 border-l-2 border-amber-400 pl-3">
+                  <p className="text-xs sm:text-sm text-gray-600 italic mb-4 border-l-2 border-amber-400 pl-3 whitespace-pre-line">
                     "{ed.editorialNote}"
                   </p>
 

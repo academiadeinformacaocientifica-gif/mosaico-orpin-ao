@@ -173,43 +173,49 @@ export const HomePage: React.FC<HomePageProps> = ({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {magazineEditions.map((ed) => (
-            <div
-              key={ed.id}
-              onClick={() => onOpenEdition(ed)}
-              className="bg-[#f8f9fa] hover:bg-white rounded-xl p-4 border border-gray-200 transition-all hover:shadow-md cursor-pointer group flex gap-4 items-center"
-            >
-              <div className="w-20 h-28 rounded-lg overflow-hidden bg-gray-200 shrink-0 shadow-sm relative">
-                <img
-                  src={ed.coverImage}
-                  alt={ed.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                />
-                <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[9px] px-1 rounded-sm font-bold">
-                  {ed.year}
-                </span>
-              </div>
-              <div className="flex flex-col justify-between">
-                <div>
-                  <span className="text-[10px] font-bold text-[#d9251d] uppercase block mb-1">
-                    {ed.period}
+        {magazineEditions.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {magazineEditions.map((ed) => (
+              <div
+                key={ed.id}
+                onClick={() => onOpenEdition(ed)}
+                className="bg-[#f8f9fa] hover:bg-white rounded-xl p-4 border border-gray-200 transition-all hover:shadow-md cursor-pointer group flex gap-4 items-center"
+              >
+                <div className="w-20 h-28 rounded-lg overflow-hidden bg-gray-200 shrink-0 shadow-sm relative">
+                  <img
+                    src={ed.coverImage}
+                    alt={ed.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                  />
+                  <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[9px] px-1 rounded-sm font-bold">
+                    {ed.year}
                   </span>
-                  <h3 className="text-xs sm:text-sm font-bold text-gray-900 group-hover:text-[#d9251d] transition-colors line-clamp-2">
-                    {ed.title}
-                  </h3>
-                  <p className="text-[11px] text-gray-500 line-clamp-1 mt-1">
-                    {ed.theme}
-                  </p>
                 </div>
-                <span className="text-[10px] text-gray-400 font-medium mt-2 flex items-center gap-1">
-                  <BookOpen className="w-3 h-3 text-[#d9251d]" />
-                  <span>Ler Edição Online</span>
-                </span>
+                <div className="flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold text-[#d9251d] uppercase block mb-1">
+                      {ed.period}
+                    </span>
+                    <h3 className="text-xs sm:text-sm font-bold text-gray-900 group-hover:text-[#d9251d] transition-colors line-clamp-2">
+                      {ed.title}
+                    </h3>
+                    <p className="text-[11px] text-gray-500 line-clamp-1 mt-1">
+                      {ed.theme}
+                    </p>
+                  </div>
+                  <span className="text-[10px] text-gray-400 font-medium mt-2 flex items-center gap-1">
+                    <BookOpen className="w-3 h-3 text-[#d9251d]" />
+                    <span>Ler Edição Online</span>
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-[#f8f9fa] rounded-xl p-8 text-center border border-gray-200 text-gray-500 text-xs">
+            Nenhuma edição disponível no momento.
+          </div>
+        )}
       </section>
 
       {/* SECTION: IMAGENS E MOMENTOS DIPLOMÁTICOS */}

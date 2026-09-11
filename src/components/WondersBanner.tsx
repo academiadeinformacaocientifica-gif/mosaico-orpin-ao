@@ -14,7 +14,7 @@ interface WondersBannerProps {
 }
 
 export const WondersBanner: React.FC<WondersBannerProps> = ({ onNavigate, wonders }) => {
-  const activeWonders = wonders && wonders.length > 0 ? wonders : angolaNaturalWonders;
+  const activeWonders = wonders !== undefined ? wonders : angolaNaturalWonders;
   const [currentIndex, setCurrentIndex] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -32,6 +32,12 @@ export const WondersBanner: React.FC<WondersBannerProps> = ({ onNavigate, wonder
     };
   }, [activeWonders?.length]);
 
+  if (!activeWonders || activeWonders.length === 0) {
+    return null;
+  }
+
+  const safeIndex = currentIndex < activeWonders.length ? currentIndex : 0;
+
   return (
     <section 
       className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10 text-white min-h-[420px] sm:min-h-[480px] flex flex-col justify-center p-6 sm:p-12 transition-all duration-700 select-none"
@@ -40,7 +46,7 @@ export const WondersBanner: React.FC<WondersBannerProps> = ({ onNavigate, wonder
       {/* BACKGROUND SLIDESHOW WITH CROSSFADE AND KEN BURNS EFFECT (VIDEO-LIKE TRANSITION) */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-stone-950">
         {activeWonders.map((wonder, idx) => {
-          const isActive = idx === currentIndex;
+          const isActive = idx === safeIndex;
           return (
             <div
               key={wonder.id}

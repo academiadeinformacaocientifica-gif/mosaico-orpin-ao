@@ -50,18 +50,10 @@ export const WondersPage: React.FC<WondersPageProps> = ({
   likedIds = new Set(),
   onShowToast,
 }) => {
-  const activeWonders = wonders && wonders.length > 0 ? wonders : angolaNaturalWonders;
+  const activeWonders = wonders !== undefined ? wonders : angolaNaturalWonders;
   const [activeWonderId, setActiveWonderId] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<{ src: string; title: string } | null>(null);
-  const [expandedWonder, setExpandedWonder] = useState<Record<string, boolean>>({
-    kalandula: true,
-    tundavala: true,
-    maiombe: true,
-    moco: true,
-    nzenzo: true,
-    carumbo: true,
-    chiumbe: true,
-  });
+  const [expandedWonder, setExpandedWonder] = useState<Record<string, boolean>>({});
 
   const tourismArticles = articles.filter(
     (a) => a.categoryId === 'turismo' || a.category.toLowerCase().includes('turismo') || a.tags.some(t => t.toLowerCase().includes('turismo') || t.toLowerCase().includes('viag'))
@@ -70,15 +62,20 @@ export const WondersPage: React.FC<WondersPageProps> = ({
   const toggleExpand = (id: string) => {
     setExpandedWonder(prev => ({
       ...prev,
-      [id]: !prev[id]
+      [id]: prev[id] === false ? true : false
     }));
   };
 
   const handleShare = () => {
+    const wondersNames = activeWonders.map((w) => w.name).join(', ');
+    const shareText = wondersNames
+      ? `Descubra as Maravilhas Naturais de Angola: ${wondersNames}.`
+      : 'Descubra as Maravilhas Naturais e o Turismo de Angola na Revista Mosaico.';
+
     if (navigator.share) {
       navigator.share({
         title: 'As 7 Maravilhas Naturais de Angola | Revista Mosaico',
-        text: 'Descubra as 7 Maravilhas Naturais de Angola: Kalandula, Tundavala, Maiombe, Morro do Môco, Nzenzo, Carumbo e Chiumbe.',
+        text: shareText,
         url: window.location.href,
       }).catch(() => {});
     } else {
