@@ -486,7 +486,7 @@ export const WondersPage: React.FC<WondersPageProps> = ({
               <ArticleCard
                 key={art.id}
                 article={art}
-                onClick={onOpenArticle ? () => onOpenArticle(art) : () => {}}
+                onOpenArticle={onOpenArticle ? () => onOpenArticle(art) : () => {}}
                 onToggleBookmark={onToggleBookmark ? () => onToggleBookmark(art.id) : () => {}}
                 onToggleLike={onToggleLike ? () => onToggleLike(art.id) : () => {}}
                 isBookmarked={bookmarkedIds.has(art.id)}

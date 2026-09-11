@@ -559,7 +559,7 @@ export const ConsularServicesPage: React.FC<ConsularServicesPageProps> = ({
                 className="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs hover:shadow-sm transition-all cursor-pointer flex gap-4 items-start group"
               >
                 <img
-                  src={art.image}
+                  src={art.imageUrl}
                   alt=""
                   className="w-20 h-20 rounded-xl object-cover shrink-0 bg-gray-100 border border-gray-200"
                   referrerPolicy="no-referrer"
@@ -575,7 +575,7 @@ export const ConsularServicesPage: React.FC<ConsularServicesPageProps> = ({
                     {art.title}
                   </h3>
                   <p className="text-xs text-gray-500 line-clamp-2">
-                    {art.summary}
+                    {art.description}
                   </p>
                 </div>
               </div>

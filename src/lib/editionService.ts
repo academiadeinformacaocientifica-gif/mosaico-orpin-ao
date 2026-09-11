@@ -13,6 +13,20 @@ const LOCAL_STORAGE_KEY = 'mosaico_magazine_editions_v1';
 const DELETED_EDITIONS_KEY = 'mosaico_deleted_editions_v1';
 const DELETED_NUMBERS_KEY = 'mosaico_deleted_edition_numbers_v1';
 
+const LEGACY_MOCK_EDITION_IDS = new Set(['ed-12', 'ed-11', 'ed-10']);
+
+function isLegacyMockEdition(item: { id: string; title?: string }): boolean {
+  if (LEGACY_MOCK_EDITION_IDS.has(item.id)) return true;
+  if (item.title && (
+    item.title.includes('Cooperação & Sustentabilidade') ||
+    item.title.includes('Diplomacia Económica & Inovação') ||
+    item.title.includes('Memória & Diplomacia')
+  )) {
+    return true;
+  }
+  return false;
+}
+
 export function getDeletedEditionIds(): Set<string> {
   const arr = getStoredItem<string[]>(DELETED_EDITIONS_KEY, []);
   return new Set(Array.isArray(arr) ? arr.map(String) : []);
@@ -114,42 +128,28 @@ function editionToRow(item: MagazineEditionInput) {
   };
 }
 
-export function getLocalEditions(): MagazineEdition[] {
+function filterOutDeletedEditions(items: MagazineEdition[]): MagazineEdition[] {
   const deletedIds = getDeletedEditionIds();
   const deletedNums = getDeletedEditionNumbers();
+  return items.filter(
+    (item) => !isLegacyMockEdition(item) && !deletedIds.has(item.id) && (item.editionNumber === undefined || !deletedNums.has(item.editionNumber))
+  );
+}
 
-  const filterOutDeleted = (items: MagazineEdition[]): MagazineEdition[] => {
-    return items.filter(
-      (item) => !deletedIds.has(item.id) && (item.editionNumber === undefined || !deletedNums.has(item.editionNumber))
-    );
-  };
-
+export function getLocalEditions(): MagazineEdition[] {
   const saved = getStoredItem<MagazineEdition[]>(LOCAL_STORAGE_KEY, initialMagazineEditions);
   if (Array.isArray(saved) && saved.length > 0) {
-    return filterOutDeleted(saved);
+    return filterOutDeletedEditions(saved);
   }
-  return filterOutDeleted(initialMagazineEditions);
+  return filterOutDeletedEditions(initialMagazineEditions);
 }
 
 export function saveLocalEditions(items: MagazineEdition[]): void {
-  const deletedIds = getDeletedEditionIds();
-  const deletedNums = getDeletedEditionNumbers();
-  const cleanItems = items.filter(
-    (item) => !deletedIds.has(item.id) && (item.editionNumber === undefined || !deletedNums.has(item.editionNumber))
-  );
+  const cleanItems = filterOutDeletedEditions(items);
   setStoredItem(LOCAL_STORAGE_KEY, cleanItems);
 }
 
 export async function fetchMagazineEditions(): Promise<MagazineEdition[]> {
-  const deletedIds = getDeletedEditionIds();
-  const deletedNums = getDeletedEditionNumbers();
-
-  const filterOutDeleted = (items: MagazineEdition[]): MagazineEdition[] => {
-    return items.filter(
-      (item) => !deletedIds.has(item.id) && (item.editionNumber === undefined || !deletedNums.has(item.editionNumber))
-    );
-  };
-
   if (!isSupabaseConfigured) {
     return getLocalEditions();
   }
@@ -192,7 +192,7 @@ export async function fetchMagazineEditions(): Promise<MagazineEdition[]> {
     }
 
     const fromDb = (data as EditionRow[]).map(rowToEdition);
-    const validFromDb = filterOutDeleted(fromDb);
+    const validFromDb = filterOutDeletedEditions(fromDb);
     // Keep local cache in sync so initial load on refresh is instantaneous
     saveLocalEditions(validFromDb);
     return validFromDb;

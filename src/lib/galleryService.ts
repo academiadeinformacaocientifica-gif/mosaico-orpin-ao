@@ -83,31 +83,41 @@ function galleryItemToRow(item: GalleryInput) {
   };
 }
 
-export function getLocalGallery(): GalleryItem[] {
-  const deletedIds = getDeletedGalleryIds();
-  const filterOutDeleted = (items: GalleryItem[]): GalleryItem[] => {
-    return items.filter((item) => !deletedIds.has(item.id));
-  };
+const LEGACY_MOCK_GALLERY_IDS = new Set([
+  'gal-1', 'gal-2', 'gal-3', 'gal-4', 'gal-5', 'gal-6', 'gal-7', 'gal-8', 'gal-9', 'gal-10'
+]);
 
+function isLegacyMockGallery(item: { id: string; title?: string }): boolean {
+  if (LEGACY_MOCK_GALLERY_IDS.has(item.id)) return true;
+  if (item.title && (
+    item.title.includes('IMEX Barcelona') ||
+    item.title.includes('50 Anos da Independência') ||
+    item.title.includes('Cooperação Bilateral Angola-Espanha')
+  )) {
+    return true;
+  }
+  return false;
+}
+
+function filterOutDeletedGallery(items: GalleryItem[]): GalleryItem[] {
+  const deletedIds = getDeletedGalleryIds();
+  return items.filter((item) => !isLegacyMockGallery(item) && !deletedIds.has(item.id));
+}
+
+export function getLocalGallery(): GalleryItem[] {
   const saved = getStoredItem<GalleryItem[]>(LOCAL_STORAGE_KEY, initialGalleryItems);
   if (Array.isArray(saved) && saved.length > 0) {
-    return filterOutDeleted(saved);
+    return filterOutDeletedGallery(saved);
   }
-  return filterOutDeleted(initialGalleryItems);
+  return filterOutDeletedGallery(initialGalleryItems);
 }
 
 export function saveLocalGallery(items: GalleryItem[]): void {
-  const deletedIds = getDeletedGalleryIds();
-  const cleanItems = items.filter((item) => !deletedIds.has(item.id));
+  const cleanItems = filterOutDeletedGallery(items);
   setStoredItem(LOCAL_STORAGE_KEY, cleanItems);
 }
 
 export async function fetchGalleryItems(): Promise<GalleryItem[]> {
-  const deletedIds = getDeletedGalleryIds();
-  const filterOutDeleted = (items: GalleryItem[]): GalleryItem[] => {
-    return items.filter((item) => !deletedIds.has(item.id));
-  };
-
   if (!isSupabaseConfigured) {
     return getLocalGallery();
   }
@@ -149,7 +159,7 @@ export async function fetchGalleryItems(): Promise<GalleryItem[]> {
   }
 
   const fromDb = (data as GalleryRow[]).map(rowToGalleryItem);
-  const validFromDb = filterOutDeleted(fromDb);
+  const validFromDb = filterOutDeletedGallery(fromDb);
   saveLocalGallery(validFromDb);
   return validFromDb;
 }

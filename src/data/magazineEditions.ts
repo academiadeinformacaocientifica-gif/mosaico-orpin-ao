@@ -2,55 +2,20 @@ import { MagazineEdition } from '../types';
 
 export const initialMagazineEditions: MagazineEdition[] = [
   {
-    id: 'ed-12',
-    editionNumber: 12,
-    title: 'Edição nº 12 - Especial Cooperação & Sustentabilidade',
-    theme: 'Transição Energética e os 50 Anos de Laços Diplomáticos',
-    period: 'Julho - Setembro',
+    id: 'ed-13-1789123938531',
+    editionNumber: 13,
+    title: 'REVISTA MOSAICO',
+    theme: 'Edição 01',
+    period: 'Setembro',
     year: 2026,
-    coverImage: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=600&q=80',
+    coverImage: 'https://zrukdgvgnopkakwqyveu.supabase.co/storage/v1/object/public/article-images/1789123868402-11yt91.png',
+    pdfUrl: 'https://drive.google.com/drive/folders/1mPQNPWzyLVr-kuuY1dpLHcVY2FZsig3B',
     pagesCount: 64,
     highlights: [
-      'Entrevista Exclusiva com a Embaixadora de Angola em Espanha',
-      'Dossiê: O Corredor do Lobito e a Nova Rota Comercial Global',
-      'Roteiro Turístico: Do Deserto do Namibe às Terras Altas da Huíla',
-      'Galeria de Arte Contemporânea: Vozes Emergentes de Luanda em Madrid'
+      'Entrevista Exclusiva com a Chancelaria',
+      'Dossiê Diplomático e Parcerias Estratégicas'
     ],
-    editorialNote: 'Nesta 12ª edição da Revista Mosaico, mergulhamos nas transformações estruturais de Angola e no vigor renovado da nossa diplomacia na Península Ibérica.'
-  },
-  {
-    id: 'ed-11',
-    editionNumber: 11,
-    title: 'Edição nº 11 - Diplomacia Económica & Inovação',
-    theme: 'Investimento Estrangeiro e Parcerias Ibero-Africanas',
-    period: 'Abril - Junho',
-    year: 2026,
-    coverImage: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=600&q=80',
-    pagesCount: 56,
-    highlights: [
-      'Balanço do Fórum Empresarial Hispano-Angolano',
-      'Vistos e Modernização Digital Consular',
-      'Semba no Mundo: Património Cultural Imaterial',
-      'Jovens Bolseiros Angolanos nas Universidades Espanholas'
-    ],
-    editorialNote: 'A economia real faz-se com pessoas capacitadas e visão de longo prazo.'
-  },
-  {
-    id: 'ed-10',
-    editionNumber: 10,
-    title: 'Edição nº 10 - Memória & Diplomacia',
-    theme: '40 Anos da Chancelaria de Angola em Madrid (1984 - 2024)',
-    period: 'Janeiro - Março',
-    year: 2026,
-    coverImage: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80',
-    pagesCount: 72,
-    highlights: [
-      'Homenagem ao primeiro Embaixador Fernando França Van-Dúnem',
-      'Cronologia Fotográfica das Visitas Reais e Presidenciais',
-      'A Comunidade Angolana em Espanha e Andorra: Retratos e Vidas',
-      'Turismo de Natureza: As Maravilhas da Biodiversidade Angolana'
-    ],
-    editorialNote: 'Celebrar a memória é honrar as pontes sólidas erguidas com dedicação ao longo de quatro décadas.'
+    editorialNote: `Marlene Gomes  \nAdida de Imprensa da Embaixada de Angola no Reino de Espanha\nDirectora Editorial\n\nA comunicação diplomática contemporânea não se limita ao registo protocolar. Exige visão estratégica, profundidade analítica e a capacidade de projectar, com rigor e elegância, a verdadeira imagem de um Estado no espaço internacional. É sob este princípio que nasce a MOSAICO, a Revista Digital da Missão Diplomática da República de Angola no Reino de Espanha.\n\nO nome desta publicação traduz uma ambição clara: construir uma narrativa sólida e multifacetada sobre Angola, valorizando a sua identidade, a sua história e o seu papel no mundo. A MOSAICO não é um simples compêndio de notícias; é um instrumento de comunicação estratégica, pensado para reforçar a presença de Angola em Espanha, promover o conhecimento mútuo entre os nossos povos e ampliar a projecção internacional do país através da diplomacia pública.\n\nNesta edição, mergulhamos no pulsar das relações bilaterais entre Luanda e Madrid, destacando iniciativas, agendas e dinâmicas que fortalecem a cooperação entre os dois países. Este olhar editorial pretende evidenciar como a comunicação, quando orientada por critérios de rigor, clareza e responsabilidade institucional, contribui para aproximar sociedades, estimular parcerias e consolidar pontes de entendimento.\n\nA MOSAICO é o reflexo de um país em transformação, consciente da importância de comunicar com excelência e de promover a sua imagem de forma estratégica, tanto em Espanha como no espaço europeu e internacional. Para a comunidade diplomática, o sector empresarial, a academia e a diáspora, esta revista afirma-se como um espaço de informação credível, de elegância editorial e de compromisso com a verdade e com o interesse público.\n\nConvido-vos a percorrer estas páginas com o olhar de quem reconhece que a comunicação é também diplomacia e que a construção do futuro de Angola passa, inevitavelmente, pela forma como o país se apresenta, se explica e se faz conhecer no mundo.`
   }
 ];
 
