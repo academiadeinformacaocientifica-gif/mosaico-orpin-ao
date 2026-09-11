@@ -22,6 +22,7 @@ export const WondersBanner: React.FC<WondersBannerProps> = ({ onNavigate, wonder
 
   // Auto-advance slideshow seamlessly in the background (like a background video)
   useEffect(() => {
+    if (!activeWonders || activeWonders.length <= 1) return;
     timerRef.current = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % activeWonders.length);
     }, DURATION_MS);
@@ -29,7 +30,7 @@ export const WondersBanner: React.FC<WondersBannerProps> = ({ onNavigate, wonder
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [activeWonders.length]);
+  }, [activeWonders?.length]);
 
   return (
     <section 

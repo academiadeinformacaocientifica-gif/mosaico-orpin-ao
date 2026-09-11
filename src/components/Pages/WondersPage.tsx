@@ -135,7 +135,7 @@ export const WondersPage: React.FC<WondersPageProps> = ({
       <section className="relative rounded-3xl overflow-hidden shadow-xl border border-stone-800 bg-[#0f1115] text-white p-6 sm:p-12">
         <div className="absolute inset-0 z-0 opacity-25">
           <img 
-            src="https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=1920&q=80" 
+            src={activeWonders[0]?.image || "https://zrukdgvgnopkakwqyveu.supabase.co/storage/v1/object/public/article-images/1789124161188-a0cnpq.jpg"} 
             alt="Natureza de Angola" 
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
@@ -181,48 +181,57 @@ export const WondersPage: React.FC<WondersPageProps> = ({
       </section>
 
       {/* QUICK JUMP NAVIGATION BAR (AS 7 MARAVILHAS) */}
-      <section className="bg-white p-4 rounded-2xl border border-gray-200/80 shadow-xs">
-        <div className="flex items-center gap-2 mb-3 px-1">
-          <Layers className="w-4 h-4 text-[#d9251d]" />
-          <span className="text-xs font-bold uppercase tracking-wider text-stone-800">
-            Navegar pelas 7 Maravilhas:
-          </span>
-        </div>
+      {activeWonders.length > 0 && (
+        <section className="bg-white p-4 rounded-2xl border border-gray-200/80 shadow-xs">
+          <div className="flex items-center gap-2 mb-3 px-1">
+            <Layers className="w-4 h-4 text-[#d9251d]" />
+            <span className="text-xs font-bold uppercase tracking-wider text-stone-800">
+              Navegar pelas Maravilhas:
+            </span>
+          </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-          {activeWonders.map((wonder) => {
-            const isCurrent = activeWonderId === wonder.id;
-            return (
-              <button
-                key={wonder.id}
-                onClick={() => scrollToWonder(wonder.id)}
-                className={`flex flex-col items-start p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
-                  isCurrent
-                    ? 'bg-[#d9251d] text-white border-[#d9251d] shadow-sm'
-                    : 'bg-stone-50 hover:bg-stone-100 text-stone-800 border-stone-200/80'
-                }`}
-              >
-                <div className="flex items-center justify-between w-full mb-1">
-                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${
-                    isCurrent ? 'bg-white text-[#d9251d]' : 'bg-[#d9251d] text-white'
-                  }`}>
-                    {wonder.number}
+          <div className="flex flex-wrap gap-2.5">
+            {activeWonders.map((wonder) => {
+              const isCurrent = activeWonderId === wonder.id;
+              return (
+                <button
+                  key={wonder.id}
+                  onClick={() => scrollToWonder(wonder.id)}
+                  className={`flex flex-col items-start p-2.5 rounded-xl text-left border transition-all cursor-pointer min-w-[140px] flex-1 max-w-[240px] ${
+                    isCurrent
+                      ? 'bg-[#d9251d] text-white border-[#d9251d] shadow-sm'
+                      : 'bg-stone-50 hover:bg-stone-100 text-stone-800 border-stone-200/80'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full mb-1">
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${
+                      isCurrent ? 'bg-white text-[#d9251d]' : 'bg-[#d9251d] text-white'
+                    }`}>
+                      {wonder.number}
+                    </span>
+                    <span className={`text-[10px] font-semibold truncate ${isCurrent ? 'text-white/80' : 'text-stone-500'}`}>
+                      {wonder.province}
+                    </span>
+                  </div>
+                  <span className="text-xs font-bold truncate w-full">
+                    {wonder.name}
                   </span>
-                  <span className={`text-[10px] font-semibold truncate ${isCurrent ? 'text-white/80' : 'text-stone-500'}`}>
-                    {wonder.province}
-                  </span>
-                </div>
-                <span className="text-xs font-bold truncate w-full">
-                  {wonder.name}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* APRESENTAÇÃO DETALHADA UMA A UMA */}
       <div className="space-y-12">
+        {activeWonders.length === 0 && (
+          <div className="bg-white rounded-3xl border border-gray-200/80 p-12 text-center">
+            <Compass className="w-12 h-12 text-stone-300 mx-auto mb-3" />
+            <h3 className="text-lg font-bold text-stone-800 mb-1">Nenhuma maravilha registada de momento</h3>
+            <p className="text-sm text-stone-500">As maravilhas naturais serão disponibilizadas assim que forem publicadas.</p>
+          </div>
+        )}
         {activeWonders.map((wonder) => {
           const isExpanded = expandedWonder[wonder.id] !== false;
 

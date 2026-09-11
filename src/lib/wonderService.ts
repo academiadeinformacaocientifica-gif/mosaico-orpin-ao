@@ -11,6 +11,34 @@ import { getStoredItem, setStoredItem } from './resilientStorage';
 const LOCAL_STORAGE_KEY = 'mosaico_natural_wonders_v1';
 const DELETED_WONDERS_KEY = 'mosaico_deleted_wonders_v1';
 
+const LEGACY_MOCK_WONDER_IDS = new Set([
+  'kalandula',
+  'tundavala',
+  'maiombe',
+  'moco',
+  'nzenzo',
+  'carumbo',
+  'chiumbe',
+]);
+
+function isLegacyMockWonder(item: { id: string; name?: string; image?: string }): boolean {
+  if (LEGACY_MOCK_WONDER_IDS.has(item.id)) return true;
+  // Filter out any leftover mock wonder that used Unsplash stock images
+  if (
+    item.image &&
+    (item.image.includes('images.unsplash.com/photo-1547471080') ||
+      item.image.includes('images.unsplash.com/photo-1464822759023') ||
+      item.image.includes('images.unsplash.com/photo-1448375240586') ||
+      item.image.includes('images.unsplash.com/photo-1465056836041') ||
+      item.image.includes('images.unsplash.com/photo-1518709268805') ||
+      item.image.includes('images.unsplash.com/photo-1506744038136') ||
+      item.image.includes('images.unsplash.com/photo-1432405972618'))
+  ) {
+    return true;
+  }
+  return false;
+}
+
 function getDeletedWonderIds(): Set<string> {
   const arr = getStoredItem<string[]>(DELETED_WONDERS_KEY, []);
   return new Set(Array.isArray(arr) ? arr.map(String) : []);
@@ -110,31 +138,25 @@ function wonderToRow(item: NaturalWonderInput) {
   };
 }
 
-export function getLocalWonders(): NaturalWonder[] {
+function filterOutDeletedWonders(items: NaturalWonder[]): NaturalWonder[] {
   const deletedIds = getDeletedWonderIds();
-  const filterOutDeleted = (items: NaturalWonder[]): NaturalWonder[] => {
-    return items.filter((item) => !deletedIds.has(item.id));
-  };
+  return items.filter((item) => !isLegacyMockWonder(item) && !deletedIds.has(item.id));
+}
 
+export function getLocalWonders(): NaturalWonder[] {
   const saved = getStoredItem<NaturalWonder[]>(LOCAL_STORAGE_KEY, angolaNaturalWonders);
   if (Array.isArray(saved) && saved.length > 0) {
-    return filterOutDeleted(saved);
+    return filterOutDeletedWonders(saved);
   }
-  return filterOutDeleted(angolaNaturalWonders);
+  return filterOutDeletedWonders(angolaNaturalWonders);
 }
 
 export function saveLocalWonders(items: NaturalWonder[]): void {
-  const deletedIds = getDeletedWonderIds();
-  const cleanItems = items.filter((item) => !deletedIds.has(item.id));
+  const cleanItems = filterOutDeletedWonders(items);
   setStoredItem(LOCAL_STORAGE_KEY, cleanItems);
 }
 
 export async function fetchNaturalWonders(): Promise<NaturalWonder[]> {
-  const deletedIds = getDeletedWonderIds();
-  const filterOutDeleted = (items: NaturalWonder[]): NaturalWonder[] => {
-    return items.filter((item) => !deletedIds.has(item.id));
-  };
-
   if (!isSupabaseConfigured) {
     return getLocalWonders();
   }
@@ -158,26 +180,11 @@ export async function fetchNaturalWonders(): Promise<NaturalWonder[]> {
     }
 
     if (!data || data.length === 0) {
-      const local = getLocalWonders();
-      if (local.length > 0) {
-        const rows = local.map((item) => ({
-          id: item.id,
-          ...wonderToRow(item),
-        }));
-        (async () => {
-          try {
-            await supabase.from('natural_wonders').upsert(rows, { onConflict: 'id' });
-            console.log('[Mosaico] 7 Maravilhas sincronizadas com sucesso no Supabase.');
-          } catch (err) {
-            console.warn('Erro ao semear maravilhas naturais:', err);
-          }
-        })();
-      }
-      return local;
+      return getLocalWonders();
     }
 
     const fromDb = (data as WonderRow[]).map(rowToWonder);
-    const validFromDb = filterOutDeleted(fromDb);
+    const validFromDb = filterOutDeletedWonders(fromDb);
     saveLocalWonders(validFromDb);
     return validFromDb;
   } catch (err) {
