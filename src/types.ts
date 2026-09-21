@@ -29,6 +29,8 @@ export type NavPage =
   | 'turismo' 
   | 'maravilhas'
   | 'todas' 
+  | 'agenda-cultural'
+  | 'agenda-diplomatica'
   | 'feed' 
   | 'favorites' 
   | 'history' 
@@ -118,6 +120,21 @@ export interface MagazineEdition {
   isPublished?: boolean;
 }
 
+export interface CulturalEvent {
+  id: string;
+  title: string;
+  category: 'Cinema' | 'Música & Dança' | 'Artes Plásticas' | 'Literatura' | 'Gastronomia' | 'Comunidade';
+  date: string;
+  time: string;
+  location: string;
+  city: string;
+  description: string;
+  organizer: string;
+  imageUrl?: string;
+  registrationRequired?: boolean;
+  highlight?: boolean;
+}
+
 export interface DiplomaticEvent {
   id: string;
   title: string;
@@ -130,6 +147,7 @@ export interface DiplomaticEvent {
   organizer: string;
   imageUrl?: string;
   registrationRequired?: boolean;
+  status?: 'Agendado' | 'Em Curso' | 'Concluído';
 }
 
 export interface ConsularService {

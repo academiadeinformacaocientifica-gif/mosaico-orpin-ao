@@ -40,6 +40,8 @@ import { GalleryPage } from './components/Pages/GalleryPage';
 import { VideosPage } from './components/Pages/VideosPage';
 import { WondersPage } from './components/Pages/WondersPage';
 import { ConsularServicesPage } from './components/Pages/ConsularServicesPage';
+import { CulturalAgendaPage } from './components/Pages/CulturalAgendaPage';
+import { DiplomaticAgendaPage } from './components/Pages/DiplomaticAgendaPage';
 import { ArticleCard } from './components/ArticleCard';
 import { AdminGate } from './components/Admin/AdminGate';
 import { fetchArticles, addArticleComment, toggleArticleLike } from './lib/articleService';
@@ -880,6 +882,16 @@ function PageSwitch() {
           bookmarkedIds={bookmarkedIds}
           likedIds={likedIds}
         />
+      )}
+
+      {/* AGENDA CULTURAL */}
+      {currentPage === 'agenda-cultural' && (
+        <CulturalAgendaPage onShowToast={showToast} />
+      )}
+
+      {/* AGENDA MISSÃO DIPLOMÁTICA */}
+      {currentPage === 'agenda-diplomatica' && (
+        <DiplomaticAgendaPage onShowToast={showToast} />
       )}
 
       {/* MEU FEED */}

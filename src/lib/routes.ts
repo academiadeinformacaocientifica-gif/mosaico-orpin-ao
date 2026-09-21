@@ -27,6 +27,8 @@ export const PAGE_TO_PATH: Record<NavPage, string> = {
   turismo: '/turismo',
   maravilhas: '/maravilhas',
   todas: '/todas',
+  'agenda-cultural': '/agenda-cultural',
+  'agenda-diplomatica': '/agenda-diplomatica',
   feed: '/feed',
   favorites: '/favoritos',
   history: '/historia',

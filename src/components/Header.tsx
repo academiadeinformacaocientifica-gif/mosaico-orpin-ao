@@ -10,6 +10,8 @@ import {
   X, 
   BookMarked, 
   Calendar, 
+  CalendarDays,
+  Landmark,
   Compass, 
   FileText,
   Info,
@@ -75,13 +77,8 @@ export const Header: React.FC<HeaderProps> = ({
   const secondaryNavItems: { id: NavPage; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'home', label: 'Home', icon: <Home className="w-4 h-4" /> },
     { id: 'sobre', label: 'Sobre', icon: <Info className="w-4 h-4" /> },
-    { id: 'feed', label: 'Meu Feed', icon: <Newspaper className="w-4 h-4" /> },
-    { 
-      id: 'favorites', 
-      label: 'Favoritos', 
-      icon: <Bookmark className="w-4 h-4" />, 
-      badge: favoritesCount 
-    },
+    { id: 'agenda-cultural', label: 'Agenda Cultural', icon: <CalendarDays className="w-4 h-4" /> },
+    { id: 'agenda-diplomatica', label: 'Agenda Missão Diplomática', icon: <Landmark className="w-4 h-4" /> },
     { id: 'history', label: 'História', icon: <Clock className="w-4 h-4" /> },
     { id: 'blog', label: 'Blog', icon: <FileText className="w-4 h-4" /> },
     { id: 'edicoes', label: 'Edições', icon: <BookMarked className="w-4 h-4" /> },

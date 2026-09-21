@@ -143,6 +143,18 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onShowToast }) => {
                 Sobre a Embaixada
               </button>
               <button 
+                onClick={() => onNavigate('agenda-cultural')} 
+                className="text-left hover:text-white transition-colors py-1 cursor-pointer font-medium text-amber-100"
+              >
+                Agenda Cultural
+              </button>
+              <button 
+                onClick={() => onNavigate('agenda-diplomatica')} 
+                className="text-left hover:text-white transition-colors py-1 cursor-pointer font-medium text-amber-100"
+              >
+                Agenda Diplomática
+              </button>
+              <button 
                 onClick={() => onNavigate('history')} 
                 className="text-left hover:text-white transition-colors py-1 cursor-pointer font-medium"
               >
