@@ -13,19 +13,23 @@ import {
   CalendarCheck
 } from 'lucide-react';
 import { DiplomaticEvent } from '../../types';
-import { diplomaticEvents } from '../../data/diplomaticAgenda';
+import { getLocalDiplomaticEvents } from '../../lib/diplomaticAgendaService';
 
 interface DiplomaticAgendaPageProps {
+  events?: DiplomaticEvent[];
   onShowToast?: (message: string) => void;
 }
 
-export const DiplomaticAgendaPage: React.FC<DiplomaticAgendaPageProps> = ({ onShowToast }) => {
+export const DiplomaticAgendaPage: React.FC<DiplomaticAgendaPageProps> = ({ events: propEvents, onShowToast }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('Todas');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  const baseEvents = propEvents ?? getLocalDiplomaticEvents();
+  const publishedEvents = baseEvents.filter((e) => e.isPublished !== false);
+
   const categories = ['Todas', 'Diplomacia', 'Comércio', 'Consular', 'Académico'];
 
-  const filteredEvents = diplomaticEvents.filter((event) => {
+  const filteredEvents = publishedEvents.filter((event) => {
     const matchesCategory = selectedCategory === 'Todas' || event.category === selectedCategory;
     const matchesSearch = 
       event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

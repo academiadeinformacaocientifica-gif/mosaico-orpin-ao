@@ -5,7 +5,15 @@
 
 import React from 'react';
 import { Loader2 } from 'lucide-react';
-import { Article, GalleryItem, VideoItem, MagazineEdition, ConsularDocument } from '../../types';
+import {
+  Article,
+  GalleryItem,
+  VideoItem,
+  MagazineEdition,
+  ConsularDocument,
+  CulturalEvent,
+  DiplomaticEvent,
+} from '../../types';
 import { NaturalWonder } from '../../data/wondersData';
 import { useAuth } from '../../lib/AuthContext';
 import { AdminLoginPage } from './AdminLoginPage';
@@ -18,6 +26,8 @@ interface AdminGateProps {
   magazineEditions: MagazineEdition[];
   naturalWonders: NaturalWonder[];
   consularDocs: ConsularDocument[];
+  culturalEvents: CulturalEvent[];
+  diplomaticEvents: DiplomaticEvent[];
   articlesLoading: boolean;
   articlesError: string | null;
   onArticlesChanged: () => void;
@@ -26,6 +36,8 @@ interface AdminGateProps {
   onEditionsChanged: () => void;
   onWondersChanged: () => void;
   onConsularDocsChanged: () => void;
+  onCulturalEventsChanged: () => void;
+  onDiplomaticEventsChanged: () => void;
   onGoToSite: () => void;
   onShowToast: (msg: string) => void;
 }
@@ -37,6 +49,8 @@ export const AdminGate: React.FC<AdminGateProps> = ({
   magazineEditions,
   naturalWonders,
   consularDocs,
+  culturalEvents,
+  diplomaticEvents,
   articlesLoading,
   articlesError,
   onArticlesChanged,
@@ -45,6 +59,8 @@ export const AdminGate: React.FC<AdminGateProps> = ({
   onEditionsChanged,
   onWondersChanged,
   onConsularDocsChanged,
+  onCulturalEventsChanged,
+  onDiplomaticEventsChanged,
   onGoToSite,
   onShowToast,
 }) => {
@@ -70,6 +86,8 @@ export const AdminGate: React.FC<AdminGateProps> = ({
       magazineEditions={magazineEditions}
       naturalWonders={naturalWonders}
       consularDocs={consularDocs}
+      culturalEvents={culturalEvents}
+      diplomaticEvents={diplomaticEvents}
       loading={articlesLoading}
       loadError={articlesError}
       onArticlesChanged={onArticlesChanged}
@@ -78,6 +96,8 @@ export const AdminGate: React.FC<AdminGateProps> = ({
       onEditionsChanged={onEditionsChanged}
       onWondersChanged={onWondersChanged}
       onConsularDocsChanged={onConsularDocsChanged}
+      onCulturalEventsChanged={onCulturalEventsChanged}
+      onDiplomaticEventsChanged={onDiplomaticEventsChanged}
       onGoToSite={onGoToSite}
       onShowToast={onShowToast}
     />

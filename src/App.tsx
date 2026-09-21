@@ -14,7 +14,17 @@ import {
   useSearchParams,
   useOutletContext,
 } from 'react-router-dom';
-import { NavPage, Article, MagazineEdition, CategoryId, GalleryItem, VideoItem, ConsularDocument } from './types';
+import {
+  NavPage,
+  Article,
+  MagazineEdition,
+  CategoryId,
+  GalleryItem,
+  VideoItem,
+  ConsularDocument,
+  CulturalEvent,
+  DiplomaticEvent,
+} from './types';
 import { resolvePageFromPath, articlePath, PAGE_TO_PATH } from './lib/routes';
 import { initialArticles } from './data/articles';
 import { initialGalleryItems } from './data/galleryData';
@@ -50,6 +60,8 @@ import { fetchVideoItems, getLocalVideos } from './lib/videoService';
 import { fetchMagazineEditions, getLocalEditions } from './lib/editionService';
 import { fetchNaturalWonders, getLocalWonders } from './lib/wonderService';
 import { fetchConsularDocuments, getLocalConsularDocuments } from './lib/consularDocService';
+import { fetchCulturalEvents, getLocalCulturalEvents } from './lib/culturalAgendaService';
+import { fetchDiplomaticEvents, getLocalDiplomaticEvents } from './lib/diplomaticAgendaService';
 import { isSupabaseConfigured } from './lib/supabase';
 import { Search, X, FolderSearch } from 'lucide-react';
 
@@ -109,6 +121,26 @@ export default function App() {
       }
     }
     return consularDocuments;
+  });
+  const [culturalEventsList, setCulturalEventsList] = useState<CulturalEvent[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return getLocalCulturalEvents();
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+  const [diplomaticEventsList, setDiplomaticEventsList] = useState<DiplomaticEvent[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return getLocalDiplomaticEvents();
+      } catch {
+        return [];
+      }
+    }
+    return [];
   });
 
   const [articlesLoading, setArticlesLoading] = useState(false);
@@ -174,6 +206,24 @@ export default function App() {
     }
   }, []);
 
+  const loadCulturalEventsFromBackend = useCallback(async () => {
+    try {
+      const remote = await fetchCulturalEvents();
+      if (remote && remote.length > 0) setCulturalEventsList(remote);
+    } catch {
+      // fallback
+    }
+  }, []);
+
+  const loadDiplomaticEventsFromBackend = useCallback(async () => {
+    try {
+      const remote = await fetchDiplomaticEvents();
+      if (remote && remote.length > 0) setDiplomaticEventsList(remote);
+    } catch {
+      // fallback
+    }
+  }, []);
+
   useEffect(() => {
     loadArticlesFromBackend();
     loadGalleryFromBackend();
@@ -181,6 +231,8 @@ export default function App() {
     loadEditionsFromBackend();
     loadWondersFromBackend();
     loadConsularDocsFromBackend();
+    loadCulturalEventsFromBackend();
+    loadDiplomaticEventsFromBackend();
   }, [
     loadArticlesFromBackend,
     loadGalleryFromBackend,
@@ -188,6 +240,8 @@ export default function App() {
     loadEditionsFromBackend,
     loadWondersFromBackend,
     loadConsularDocsFromBackend,
+    loadCulturalEventsFromBackend,
+    loadDiplomaticEventsFromBackend,
   ]);
 
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(() => {
@@ -510,6 +564,8 @@ export default function App() {
     publicVideoItems,
     publicNaturalWonders,
     publicConsularDocuments,
+    culturalEventsList,
+    diplomaticEventsList,
     categoryConfigs,
     bookmarkedIds,
     likedIds,
@@ -537,6 +593,8 @@ export default function App() {
             magazineEditions={magazineEditionsList}
             naturalWonders={naturalWondersList}
             consularDocs={consularDocumentsList}
+            culturalEvents={culturalEventsList}
+            diplomaticEvents={diplomaticEventsList}
             articlesLoading={articlesLoading}
             articlesError={articlesError}
             onArticlesChanged={loadArticlesFromBackend}
@@ -545,6 +603,8 @@ export default function App() {
             onEditionsChanged={loadEditionsFromBackend}
             onWondersChanged={loadWondersFromBackend}
             onConsularDocsChanged={loadConsularDocsFromBackend}
+            onCulturalEventsChanged={loadCulturalEventsFromBackend}
+            onDiplomaticEventsChanged={loadDiplomaticEventsFromBackend}
             onGoToSite={() => handleNavigate('home')}
             onShowToast={showToast}
           />
@@ -593,6 +653,8 @@ interface PageOutletContext {
   publicVideoItems: VideoItem[];
   publicNaturalWonders: NaturalWonder[];
   publicConsularDocuments: ConsularDocument[];
+  culturalEventsList: CulturalEvent[];
+  diplomaticEventsList: DiplomaticEvent[];
   categoryConfigs: Partial<Record<CategoryId, { title: string; subtitle: string }>>;
   bookmarkedIds: Set<string>;
   likedIds: Set<string>;
@@ -815,6 +877,8 @@ function PageSwitch() {
     publicVideoItems,
     publicNaturalWonders,
     publicConsularDocuments,
+    culturalEventsList,
+    diplomaticEventsList,
     categoryConfigs,
     bookmarkedIds,
     likedIds,
@@ -886,12 +950,12 @@ function PageSwitch() {
 
       {/* AGENDA CULTURAL */}
       {currentPage === 'agenda-cultural' && (
-        <CulturalAgendaPage onShowToast={showToast} />
+        <CulturalAgendaPage events={culturalEventsList} onShowToast={showToast} />
       )}
 
       {/* AGENDA MISSÃO DIPLOMÁTICA */}
       {currentPage === 'agenda-diplomatica' && (
-        <DiplomaticAgendaPage onShowToast={showToast} />
+        <DiplomaticAgendaPage events={diplomaticEventsList} onShowToast={showToast} />
       )}
 
       {/* MEU FEED */}

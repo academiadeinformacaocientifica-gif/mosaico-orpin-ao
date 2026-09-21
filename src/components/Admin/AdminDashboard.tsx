@@ -30,8 +30,18 @@ import {
   FileUp,
   Database,
   AlertTriangle,
+  CalendarDays,
+  Landmark,
 } from 'lucide-react';
-import { Article, GalleryItem, VideoItem, MagazineEdition, ConsularDocument } from '../../types';
+import {
+  Article,
+  GalleryItem,
+  VideoItem,
+  MagazineEdition,
+  ConsularDocument,
+  CulturalEvent,
+  DiplomaticEvent,
+} from '../../types';
 import { NaturalWonder } from '../../data/wondersData';
 import { useAuth } from '../../lib/AuthContext';
 import { isSupabaseConfigured } from '../../lib/supabase';
@@ -74,8 +84,18 @@ import { EditionFormModal } from './EditionFormModal';
 import { WonderFormModal } from './WonderFormModal';
 import { ConsularDocFormModal } from './ConsularDocFormModal';
 import { DatabaseStatusModal } from './DatabaseStatusModal';
+import { AdminCulturalAgendaSection } from './sections/AdminCulturalAgendaSection';
+import { AdminDiplomaticAgendaSection } from './sections/AdminDiplomaticAgendaSection';
 
-type AdminTab = 'noticias' | 'documentos' | 'maravilhas' | 'edicoes' | 'galeria' | 'videos';
+type AdminTab =
+  | 'noticias'
+  | 'documentos'
+  | 'maravilhas'
+  | 'edicoes'
+  | 'galeria'
+  | 'videos'
+  | 'agenda-cultural'
+  | 'agenda-diplomatica';
 type StatusFilter = 'todos' | 'publicados' | 'rascunhos';
 
 interface AdminDashboardProps {
@@ -85,6 +105,8 @@ interface AdminDashboardProps {
   magazineEditions: MagazineEdition[];
   naturalWonders: NaturalWonder[];
   consularDocs: ConsularDocument[];
+  culturalEvents: CulturalEvent[];
+  diplomaticEvents: DiplomaticEvent[];
   loading: boolean;
   loadError: string | null;
   onArticlesChanged: () => void;
@@ -93,6 +115,8 @@ interface AdminDashboardProps {
   onEditionsChanged: () => void;
   onWondersChanged: () => void;
   onConsularDocsChanged: () => void;
+  onCulturalEventsChanged: () => void;
+  onDiplomaticEventsChanged: () => void;
   onGoToSite: () => void;
   onShowToast: (msg: string) => void;
 }
@@ -104,6 +128,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   magazineEditions,
   naturalWonders,
   consularDocs,
+  culturalEvents,
+  diplomaticEvents,
   loading,
   loadError,
   onArticlesChanged,
@@ -112,6 +138,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onEditionsChanged,
   onWondersChanged,
   onConsularDocsChanged,
+  onCulturalEventsChanged,
+  onDiplomaticEventsChanged,
   onGoToSite,
   onShowToast,
 }) => {
@@ -121,6 +149,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Search & Status filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
+
+  // Triggers for external modal opens
+  const [culturalCreateTrigger, setCulturalCreateTrigger] = useState(0);
+  const [diplomaticCreateTrigger, setDiplomaticCreateTrigger] = useState(0);
 
   // Article State
   const [articleFormOpen, setArticleFormOpen] = useState(false);
@@ -297,6 +329,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const drafts = consularDocs.length - published;
     return { total: consularDocs.length, published, drafts };
   }, [consularDocs]);
+
+  const culturalStats = useMemo(() => {
+    const published = culturalEvents.filter((e) => e.isPublished !== false).length;
+    const drafts = culturalEvents.length - published;
+    return { total: culturalEvents.length, published, drafts };
+  }, [culturalEvents]);
+
+  const diplomaticStats = useMemo(() => {
+    const published = diplomaticEvents.filter((e) => e.isPublished !== false).length;
+    const drafts = diplomaticEvents.length - published;
+    return { total: diplomaticEvents.length, published, drafts };
+  }, [diplomaticEvents]);
 
   // Articles CRUD Handlers
   const handleSaveArticle = async (id: string | null, input: ArticleInput) => {
@@ -797,6 +841,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <VideoIcon className="w-4 h-4" />
               <span>Novo Vídeo</span>
             </button>
+
+            <button
+              onClick={() => {
+                setActiveTab('agenda-cultural');
+                setCulturalCreateTrigger((prev) => prev + 1);
+              }}
+              className="flex items-center gap-1.5 bg-[#d9251d] hover:bg-[#b91e17] text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98"
+            >
+              <Plus className="w-4 h-4" />
+              <CalendarDays className="w-4 h-4" />
+              <span>Novo Evento Cultural</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveTab('agenda-diplomatica');
+                setDiplomaticCreateTrigger((prev) => prev + 1);
+              }}
+              className="flex items-center gap-1.5 bg-stone-900 hover:bg-stone-800 text-amber-400 border border-amber-500/30 text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98"
+            >
+              <Plus className="w-4 h-4 text-amber-400" />
+              <Landmark className="w-4 h-4 text-amber-400" />
+              <span>Novo Compromisso Diplomático</span>
+            </button>
           </div>
         </div>
 
@@ -933,6 +1001,50 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               {videoStats.total}
             </span>
           </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('agenda-cultural');
+              setSearchQuery('');
+            }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeTab === 'agenda-cultural'
+                ? 'bg-[#d9251d] text-white shadow-xs'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <CalendarDays className="w-4 h-4" />
+            <span>Agenda Cultural</span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'agenda-cultural' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              {culturalStats.total}
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('agenda-diplomatica');
+              setSearchQuery('');
+            }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeTab === 'agenda-diplomatica'
+                ? 'bg-[#1e2330] text-amber-400 border border-amber-500/40 shadow-xs'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <Landmark className="w-4 h-4" />
+            <span>Agenda Diplomática</span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'agenda-diplomatica' ? 'bg-amber-400/20 text-amber-300' : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              {diplomaticStats.total}
+            </span>
+          </button>
         </div>
 
         {/* SEARCH AND STATUS FILTER BAR */}
@@ -950,7 +1062,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   ? 'edições da revista'
                   : activeTab === 'galeria'
                   ? 'galeria de imagens'
-                  : 'vídeos'
+                  : activeTab === 'videos'
+                  ? 'vídeos'
+                  : activeTab === 'agenda-cultural'
+                  ? 'eventos culturais'
+                  : activeTab === 'agenda-diplomatica'
+                  ? 'agenda diplomática'
+                  : 'documentos'
               }...`}
               className="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white outline-none focus:border-[#d9251d] transition-colors"
             />
@@ -984,7 +1102,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 ? magazineStats.published
                 : activeTab === 'galeria'
                 ? galleryStats.published
-                : videoStats.published}
+                : activeTab === 'videos'
+                ? videoStats.published
+                : activeTab === 'agenda-cultural'
+                ? culturalStats.published
+                : activeTab === 'agenda-diplomatica'
+                ? diplomaticStats.published
+                : consularDocStats.published}
               )
             </button>
             <button
@@ -1001,7 +1125,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 ? articleStats.drafts
                 : activeTab === 'galeria'
                 ? galleryStats.drafts
-                : videoStats.drafts}
+                : activeTab === 'videos'
+                ? videoStats.drafts
+                : activeTab === 'agenda-cultural'
+                ? culturalStats.drafts
+                : activeTab === 'agenda-diplomatica'
+                ? diplomaticStats.drafts
+                : consularDocStats.drafts}
               )
             </button>
           </div>
@@ -1878,6 +2008,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             )}
           </div>
         )}
+        {/* TAB 7: AGENDA CULTURAL */}
+        {activeTab === 'agenda-cultural' && (
+          <AdminCulturalAgendaSection
+            culturalEvents={culturalEvents}
+            searchQuery={searchQuery}
+            statusFilter={statusFilter}
+            createTrigger={culturalCreateTrigger}
+            onEventsChanged={onCulturalEventsChanged}
+            onShowToast={onShowToast}
+          />
+        )}
+
+        {/* TAB 8: AGENDA MISSÃO DIPLOMÁTICA */}
+        {activeTab === 'agenda-diplomatica' && (
+          <AdminDiplomaticAgendaSection
+            diplomaticEvents={diplomaticEvents}
+            searchQuery={searchQuery}
+            statusFilter={statusFilter}
+            createTrigger={diplomaticCreateTrigger}
+            onEventsChanged={onDiplomaticEventsChanged}
+            onShowToast={onShowToast}
+          />
+        )}
       </main>
 
       {/* ARTICLE FORM MODAL */}
@@ -1964,6 +2117,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             onEditionsChanged();
             onWondersChanged();
             onConsularDocsChanged();
+            onCulturalEventsChanged();
+            onDiplomaticEventsChanged();
           }}
         />
       )}

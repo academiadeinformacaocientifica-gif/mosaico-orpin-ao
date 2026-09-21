@@ -30,6 +30,8 @@ const TABLES_TO_CHECK = [
   { key: 'video_items', name: 'video_items', label: 'Vídeos & Reportagens' },
   { key: 'magazine_editions', name: 'magazine_editions', label: 'Edições da Revista Mosaico' },
   { key: 'natural_wonders', name: 'natural_wonders', label: '7 Maravilhas de Angola' },
+  { key: 'cultural_events', name: 'cultural_events', label: 'Agenda Cultural' },
+  { key: 'diplomatic_events', name: 'diplomatic_events', label: 'Agenda Missão Diplomática' },
 ];
 
 export async function checkDatabaseHealth(): Promise<DbHealthReport> {

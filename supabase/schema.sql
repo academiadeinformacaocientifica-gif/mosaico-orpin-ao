@@ -170,7 +170,45 @@ create table if not exists public.consular_documents (
 alter table public.consular_documents add column if not exists is_published boolean not null default true;
 create index if not exists idx_consular_docs_category on public.consular_documents(category);
 
--- 8. POLÍTICAS DE SEGURANÇA E ACESSO (Row Level Security - RLS) --------------
+-- 8. TABELA DE AGENDA CULTURAL -----------------------------------------------
+create table if not exists public.cultural_events (
+  id                    text primary key,
+  title                 text not null,
+  category              text not null default 'Comunidade',
+  date_label            text not null,
+  time_label            text not null,
+  location              text not null,
+  city                  text not null default 'Madrid',
+  description           text not null default '',
+  organizer             text not null default 'Sector Cultural da Embaixada',
+  image_url             text,
+  registration_required boolean not null default false,
+  highlight             boolean not null default false,
+  is_published          boolean not null default true,
+  created_at            timestamptz not null default now(),
+  updated_at            timestamptz not null default now()
+);
+
+-- 9. TABELA DE AGENDA MISSÃO DIPLOMÁTICA ------------------------------------
+create table if not exists public.diplomatic_events (
+  id                    text primary key,
+  title                 text not null,
+  category              text not null default 'Diplomacia',
+  date_label            text not null,
+  time_label            text not null,
+  location              text not null,
+  city                  text not null default 'Madrid',
+  description           text not null default '',
+  organizer             text not null default 'Embaixada de Angola',
+  image_url             text,
+  registration_required boolean not null default false,
+  status                text not null default 'Agendado',
+  is_published          boolean not null default true,
+  created_at            timestamptz not null default now(),
+  updated_at            timestamptz not null default now()
+);
+
+-- 10. POLÍTICAS DE SEGURANÇA E ACESSO (Row Level Security - RLS) --------------
 
 -- Habilitar RLS em todas as tabelas
 alter table public.admin_users enable row level security;
@@ -180,6 +218,8 @@ alter table public.gallery_items enable row level security;
 alter table public.video_items enable row level security;
 alter table public.magazine_editions enable row level security;
 alter table public.natural_wonders enable row level security;
+alter table public.cultural_events enable row level security;
+alter table public.diplomatic_events enable row level security;
 
 -- Políticas admin_users
 drop policy if exists "Permitir leitura de perfis de admin" on public.admin_users;
@@ -265,6 +305,32 @@ create policy "Atualização de documentos consulares" on public.consular_docume
 
 drop policy if exists "Remoção de documentos consulares" on public.consular_documents;
 create policy "Remoção de documentos consulares" on public.consular_documents for delete using (true);
+
+-- Políticas cultural_events
+drop policy if exists "Leitura pública de eventos culturais" on public.cultural_events;
+create policy "Leitura pública de eventos culturais" on public.cultural_events for select using (true);
+
+drop policy if exists "Inserção de eventos culturais" on public.cultural_events;
+create policy "Inserção de eventos culturais" on public.cultural_events for insert with check (true);
+
+drop policy if exists "Atualização de eventos culturais" on public.cultural_events;
+create policy "Atualização de eventos culturais" on public.cultural_events for update using (true) with check (true);
+
+drop policy if exists "Remoção de eventos culturais" on public.cultural_events;
+create policy "Remoção de eventos culturais" on public.cultural_events for delete using (true);
+
+-- Políticas diplomatic_events
+drop policy if exists "Leitura pública de agenda diplomática" on public.diplomatic_events;
+create policy "Leitura pública de agenda diplomática" on public.diplomatic_events for select using (true);
+
+drop policy if exists "Inserção de agenda diplomática" on public.diplomatic_events;
+create policy "Inserção de agenda diplomática" on public.diplomatic_events for insert with check (true);
+
+drop policy if exists "Atualização de agenda diplomática" on public.diplomatic_events;
+create policy "Atualização de agenda diplomática" on public.diplomatic_events for update using (true) with check (true);
+
+drop policy if exists "Remoção de agenda diplomática" on public.diplomatic_events;
+create policy "Remoção de agenda diplomática" on public.diplomatic_events for delete using (true);
 
 -- 9. STORAGE / BUCKET DE IMAGENS E MULTIMÉDIA --------------------------------
 insert into storage.buckets (id, name, public)

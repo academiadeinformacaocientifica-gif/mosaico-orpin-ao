@@ -12,21 +12,25 @@ import {
   Ticket
 } from 'lucide-react';
 import { CulturalEvent } from '../../types';
-import { culturalEvents } from '../../data/culturalAgenda';
+import { getLocalCulturalEvents } from '../../lib/culturalAgendaService';
 
 interface CulturalAgendaPageProps {
+  events?: CulturalEvent[];
   onShowToast?: (message: string) => void;
 }
 
-export const CulturalAgendaPage: React.FC<CulturalAgendaPageProps> = ({ onShowToast }) => {
+export const CulturalAgendaPage: React.FC<CulturalAgendaPageProps> = ({ events: propEvents, onShowToast }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('Todas');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCity, setSelectedCity] = useState<string>('Todas');
 
+  const baseEvents = propEvents ?? getLocalCulturalEvents();
+  const publishedEvents = baseEvents.filter((e) => e.isPublished !== false);
+
   const categories = ['Todas', 'Cinema', 'Música & Dança', 'Artes Plásticas', 'Literatura', 'Gastronomia', 'Comunidade'];
   const cities = ['Todas', 'Madrid', 'Barcelona'];
 
-  const filteredEvents = culturalEvents.filter((event) => {
+  const filteredEvents = publishedEvents.filter((event) => {
     const matchesCategory = selectedCategory === 'Todas' || event.category === selectedCategory;
     const matchesCity = selectedCity === 'Todas' || event.city.toLowerCase().includes(selectedCity.toLowerCase());
     const matchesSearch = 

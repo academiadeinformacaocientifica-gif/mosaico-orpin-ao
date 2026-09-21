@@ -133,6 +133,8 @@ export interface CulturalEvent {
   imageUrl?: string;
   registrationRequired?: boolean;
   highlight?: boolean;
+  isPublished?: boolean;
+  createdAt?: string;
 }
 
 export interface DiplomaticEvent {
@@ -148,6 +150,8 @@ export interface DiplomaticEvent {
   imageUrl?: string;
   registrationRequired?: boolean;
   status?: 'Agendado' | 'Em Curso' | 'Concluído';
+  isPublished?: boolean;
+  createdAt?: string;
 }
 
 export interface ConsularService {
