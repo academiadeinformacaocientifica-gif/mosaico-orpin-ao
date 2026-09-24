@@ -166,9 +166,9 @@ export async function fetchMagazineEditions(): Promise<MagazineEdition[]> {
         error.message?.includes('relation "public.magazine_editions" does not exist')
       ) {
         console.warn('[Mosaico] Tabela "magazine_editions" não existe ainda no Supabase. Usando armazenamento local.');
-        return getLocalEditions();
+      } else {
+        console.warn('[Mosaico] Aviso ao consultar edições no Supabase (usando dados locais):', error.message || error);
       }
-      console.error('Erro ao buscar edições de revista no Supabase:', error);
       return getLocalEditions();
     }
 

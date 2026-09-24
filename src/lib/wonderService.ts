@@ -173,9 +173,9 @@ export async function fetchNaturalWonders(): Promise<NaturalWonder[]> {
         error.message?.includes('relation "public.natural_wonders" does not exist')
       ) {
         console.warn('[Mosaico] Tabela "natural_wonders" não existe ainda no Supabase. Usando dados locais.');
-        return getLocalWonders();
+      } else {
+        console.warn('[Mosaico] Aviso ao consultar maravilhas no Supabase (usando dados locais):', error.message || error);
       }
-      console.error('Erro ao buscar maravilhas naturais no Supabase:', error);
       return getLocalWonders();
     }
 

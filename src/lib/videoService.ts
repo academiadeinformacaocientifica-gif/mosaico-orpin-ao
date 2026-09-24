@@ -115,46 +115,51 @@ export async function fetchVideoItems(): Promise<VideoItem[]> {
     return getLocalVideos();
   }
 
-  const { data, error } = await supabase
-    .from('video_items')
-    .select('*')
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('video_items')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  if (error) {
-    if (
-      error.code === 'PGRST205' ||
-      error.message?.includes('relation "public.video_items" does not exist')
-    ) {
-      console.warn('[Mosaico] Tabela "video_items" não existe ainda no Supabase. Usando armazenamento local.');
+    if (error) {
+      if (
+        error.code === 'PGRST205' ||
+        error.message?.includes('relation "public.video_items" does not exist')
+      ) {
+        console.warn('[Mosaico] Tabela "video_items" não existe ainda no Supabase. Usando armazenamento local.');
+      } else {
+        console.warn('[Mosaico] Aviso ao consultar vídeos no Supabase (usando dados locais):', error.message || error);
+      }
       return getLocalVideos();
     }
-    console.error('Erro ao buscar vídeos no Supabase:', error);
+
+    if (!data || data.length === 0) {
+      const local = getLocalVideos();
+      if (local.length > 0) {
+        const rows = local.map((item) => ({
+          id: item.id,
+          ...videoItemToRow(item),
+        }));
+        (async () => {
+          try {
+            await supabase.from('video_items').upsert(rows, { onConflict: 'id' });
+            console.log('[Mosaico] Vídeos iniciais sincronizados com sucesso no Supabase.');
+          } catch (err) {
+            console.warn('Erro ao semear vídeos iniciais:', err);
+          }
+        })();
+      }
+      return local;
+    }
+
+    const fromDb = (data as VideoRow[]).map(rowToVideoItem);
+    const validFromDb = filterOutDeleted(fromDb);
+    saveLocalVideos(validFromDb);
+    return validFromDb;
+  } catch (netErr) {
+    console.warn('[Mosaico] Falha de rede/conexão ao buscar vídeos no Supabase. Usando armazenamento local resiliente:', netErr);
     return getLocalVideos();
   }
-
-  if (!data || data.length === 0) {
-    const local = getLocalVideos();
-    if (local.length > 0) {
-      const rows = local.map((item) => ({
-        id: item.id,
-        ...videoItemToRow(item),
-      }));
-      (async () => {
-        try {
-          await supabase.from('video_items').upsert(rows, { onConflict: 'id' });
-          console.log('[Mosaico] Vídeos iniciais sincronizados com sucesso no Supabase.');
-        } catch (err) {
-          console.warn('Erro ao semear vídeos iniciais:', err);
-        }
-      })();
-    }
-    return local;
-  }
-
-  const fromDb = (data as VideoRow[]).map(rowToVideoItem);
-  const validFromDb = filterOutDeleted(fromDb);
-  saveLocalVideos(validFromDb);
-  return validFromDb;
 }
 
 export async function createVideoItem(input: VideoInput): Promise<VideoItem> {

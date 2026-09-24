@@ -122,46 +122,51 @@ export async function fetchGalleryItems(): Promise<GalleryItem[]> {
     return getLocalGallery();
   }
 
-  const { data, error } = await supabase
-    .from('gallery_items')
-    .select('*')
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('gallery_items')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  if (error) {
-    if (
-      error.code === 'PGRST205' ||
-      error.message?.includes('relation "public.gallery_items" does not exist')
-    ) {
-      console.warn('[Mosaico] Tabela "gallery_items" não existe ainda no Supabase. Usando armazenamento local.');
+    if (error) {
+      if (
+        error.code === 'PGRST205' ||
+        error.message?.includes('relation "public.gallery_items" does not exist')
+      ) {
+        console.warn('[Mosaico] Tabela "gallery_items" não existe ainda no Supabase. Usando armazenamento local.');
+      } else {
+        console.warn('[Mosaico] Aviso ao consultar galeria no Supabase (usando dados locais):', error.message || error);
+      }
       return getLocalGallery();
     }
-    console.error('Erro ao buscar galeria no Supabase:', error);
+
+    if (!data || data.length === 0) {
+      const local = getLocalGallery();
+      if (local.length > 0) {
+        const rows = local.map((item) => ({
+          id: item.id,
+          ...galleryItemToRow(item),
+        }));
+        (async () => {
+          try {
+            await supabase.from('gallery_items').upsert(rows, { onConflict: 'id' });
+            console.log('[Mosaico] Galeria inicial sincronizada com sucesso no Supabase.');
+          } catch (err) {
+            console.warn('Erro ao semear galeria inicial:', err);
+          }
+        })();
+      }
+      return local;
+    }
+
+    const fromDb = (data as GalleryRow[]).map(rowToGalleryItem);
+    const validFromDb = filterOutDeletedGallery(fromDb);
+    saveLocalGallery(validFromDb);
+    return validFromDb;
+  } catch (netErr) {
+    console.warn('[Mosaico] Falha de rede/conexão ao buscar galeria no Supabase. Usando armazenamento local resiliente:', netErr);
     return getLocalGallery();
   }
-
-  if (!data || data.length === 0) {
-    const local = getLocalGallery();
-    if (local.length > 0) {
-      const rows = local.map((item) => ({
-        id: item.id,
-        ...galleryItemToRow(item),
-      }));
-      (async () => {
-        try {
-          await supabase.from('gallery_items').upsert(rows, { onConflict: 'id' });
-          console.log('[Mosaico] Galeria inicial sincronizada com sucesso no Supabase.');
-        } catch (err) {
-          console.warn('Erro ao semear galeria inicial:', err);
-        }
-      })();
-    }
-    return local;
-  }
-
-  const fromDb = (data as GalleryRow[]).map(rowToGalleryItem);
-  const validFromDb = filterOutDeletedGallery(fromDb);
-  saveLocalGallery(validFromDb);
-  return validFromDb;
 }
 
 export async function createGalleryItem(input: GalleryInput): Promise<GalleryItem> {

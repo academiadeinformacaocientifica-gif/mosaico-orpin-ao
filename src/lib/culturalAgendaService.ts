@@ -122,31 +122,36 @@ export async function fetchCulturalEvents(): Promise<CulturalEvent[]> {
     return getLocalCulturalEvents();
   }
 
-  const { data, error } = await supabase
-    .from('cultural_events')
-    .select('*')
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('cultural_events')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  if (error) {
-    if (
-      error.code === 'PGRST205' ||
-      error.message?.includes('relation "public.cultural_events" does not exist')
-    ) {
-      console.warn('[Mosaico] Tabela "cultural_events" não existe ainda no Supabase. Usando armazenamento local.');
+    if (error) {
+      if (
+        error.code === 'PGRST205' ||
+        error.message?.includes('relation "public.cultural_events" does not exist')
+      ) {
+        console.warn('[Mosaico] Tabela "cultural_events" não existe ainda no Supabase. Usando armazenamento local.');
+      } else {
+        console.warn('[Mosaico] Aviso ao consultar eventos culturais no Supabase (usando dados locais):', error.message || error);
+      }
       return getLocalCulturalEvents();
     }
-    console.error('Erro ao buscar eventos culturais no Supabase:', error);
+
+    if (!data || data.length === 0) {
+      return getLocalCulturalEvents();
+    }
+
+    const remoteEvents = data.map(rowToCulturalEvent);
+    const activeEvents = filterOutDeleted(remoteEvents);
+    saveLocalCulturalEvents(activeEvents);
+    return activeEvents;
+  } catch (netErr) {
+    console.warn('[Mosaico] Falha de rede/conexão ao buscar eventos culturais no Supabase. Usando armazenamento local resiliente:', netErr);
     return getLocalCulturalEvents();
   }
-
-  if (!data || data.length === 0) {
-    return getLocalCulturalEvents();
-  }
-
-  const remoteEvents = data.map(rowToCulturalEvent);
-  const activeEvents = filterOutDeleted(remoteEvents);
-  saveLocalCulturalEvents(activeEvents);
-  return activeEvents;
 }
 
 export async function createCulturalEvent(input: CulturalEventInput): Promise<CulturalEvent> {
@@ -169,21 +174,25 @@ export async function createCulturalEvent(input: CulturalEventInput): Promise<Cu
 
   // 2. Se Supabase configurado, persistir
   if (isSupabaseConfigured) {
-    const row = {
-      id,
-      ...culturalEventToRow(input),
-    };
+    try {
+      const row = {
+        id,
+        ...culturalEventToRow(input),
+      };
 
-    const { data, error } = await supabase
-      .from('cultural_events')
-      .insert([row])
-      .select()
-      .single();
+      const { data, error } = await supabase
+        .from('cultural_events')
+        .insert([row])
+        .select()
+        .single();
 
-    if (error) {
-      console.warn('[Mosaico] Falha ao persistir evento cultural no Supabase, mantido localmente:', error.message);
-    } else if (data) {
-      return rowToCulturalEvent(data);
+      if (error) {
+        console.warn('[Mosaico] Falha ao persistir evento cultural no Supabase, mantido localmente:', error.message);
+      } else if (data) {
+        return rowToCulturalEvent(data);
+      }
+    } catch (err) {
+      console.warn('[Mosaico] Exceção de rede ao persistir evento cultural no Supabase, mantido localmente:', err);
     }
   }
 
@@ -210,35 +219,52 @@ export async function updateCulturalEvent(
 
   // 2. Se Supabase configurado, atualizar
   if (isSupabaseConfigured) {
-    const patch: Record<string, unknown> = {};
-    if (input.title !== undefined) patch.title = input.title;
-    if (input.category !== undefined) patch.category = input.category;
-    if (input.date !== undefined) patch.date_label = input.date;
-    if (input.time !== undefined) patch.time_label = input.time;
-    if (input.location !== undefined) patch.location = input.location;
-    if (input.city !== undefined) patch.city = input.city;
-    if (input.description !== undefined) patch.description = input.description;
-    if (input.organizer !== undefined) patch.organizer = input.organizer;
-    if (input.imageUrl !== undefined) patch.image_url = input.imageUrl || null;
-    if (input.registrationRequired !== undefined) patch.registration_required = input.registrationRequired;
-    if (input.highlight !== undefined) patch.highlight = input.highlight;
-    if (input.isPublished !== undefined) patch.is_published = input.isPublished;
+    try {
+      const patch: Record<string, unknown> = {};
+      if (input.title !== undefined) patch.title = input.title;
+      if (input.category !== undefined) patch.category = input.category;
+      if (input.date !== undefined) patch.date_label = input.date;
+      if (input.time !== undefined) patch.time_label = input.time;
+      if (input.location !== undefined) patch.location = input.location;
+      if (input.city !== undefined) patch.city = input.city;
+      if (input.description !== undefined) patch.description = input.description;
+      if (input.organizer !== undefined) patch.organizer = input.organizer;
+      if (input.imageUrl !== undefined) patch.image_url = input.imageUrl || null;
+      if (input.registrationRequired !== undefined) patch.registration_required = input.registrationRequired;
+      if (input.highlight !== undefined) patch.highlight = input.highlight;
+      if (input.isPublished !== undefined) patch.is_published = input.isPublished;
 
-    const { data, error } = await supabase
-      .from('cultural_events')
-      .update(patch)
-      .eq('id', id)
-      .select()
-      .single();
+      const { data, error } = await supabase
+        .from('cultural_events')
+        .update(patch)
+        .eq('id', id)
+        .select()
+        .single();
 
-    if (error) {
-      console.warn('[Mosaico] Falha ao atualizar evento cultural no Supabase, mantido localmente:', error.message);
-    } else if (data) {
-      return rowToCulturalEvent(data);
+      if (error) {
+        console.warn('[Mosaico] Falha ao atualizar evento cultural no Supabase, mantido localmente:', error.message);
+      } else if (data) {
+        return rowToCulturalEvent(data);
+      }
+    } catch (err) {
+      console.warn('[Mosaico] Exceção de rede ao atualizar evento cultural no Supabase, mantido localmente:', err);
     }
   }
 
   return updatedEvent;
+}
+
+export async function toggleCulturalEventPublish(id: string): Promise<CulturalEvent> {
+  const current = getLocalCulturalEvents();
+  const index = current.findIndex((e) => e.id === id);
+  if (index === -1) {
+    throw new Error('Evento cultural não encontrado');
+  }
+
+  const currentStatus = current[index].isPublished !== false;
+  const newStatus = !currentStatus;
+
+  return updateCulturalEvent(id, { isPublished: newStatus });
 }
 
 export async function deleteCulturalEvent(id: string): Promise<void> {
@@ -251,13 +277,17 @@ export async function deleteCulturalEvent(id: string): Promise<void> {
 
   // 2. Remover do Supabase se configurado
   if (isSupabaseConfigured) {
-    const { error } = await supabase
-      .from('cultural_events')
-      .delete()
-      .eq('id', id);
+    try {
+      const { error } = await supabase
+        .from('cultural_events')
+        .delete()
+        .eq('id', id);
 
-    if (error) {
-      console.warn('[Mosaico] Falha ao apagar evento cultural no Supabase:', error.message);
+      if (error) {
+        console.warn('[Mosaico] Falha ao apagar evento cultural no Supabase:', error.message);
+      }
+    } catch (err) {
+      console.warn('[Mosaico] Exceção de rede ao apagar evento cultural no Supabase:', err);
     }
   }
 }

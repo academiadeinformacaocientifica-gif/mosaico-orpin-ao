@@ -209,7 +209,7 @@ export default function App() {
   const loadCulturalEventsFromBackend = useCallback(async () => {
     try {
       const remote = await fetchCulturalEvents();
-      if (remote && remote.length > 0) setCulturalEventsList(remote);
+      if (remote) setCulturalEventsList(remote);
     } catch {
       // fallback
     }
@@ -218,7 +218,7 @@ export default function App() {
   const loadDiplomaticEventsFromBackend = useCallback(async () => {
     try {
       const remote = await fetchDiplomaticEvents();
-      if (remote && remote.length > 0) setDiplomaticEventsList(remote);
+      if (remote) setDiplomaticEventsList(remote);
     } catch {
       // fallback
     }

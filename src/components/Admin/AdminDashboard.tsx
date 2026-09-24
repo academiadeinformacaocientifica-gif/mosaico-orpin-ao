@@ -757,116 +757,142 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
 
-        {/* TOP TITLE & QUICK ACTION BUTTONS */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-[#111] flex items-center gap-2">
-              <Layers className="w-6 h-6 text-[#d9251d]" />
-              <span>Gestão de Conteúdos do Portal</span>
-            </h1>
-            <p className="text-xs text-gray-500 mt-1">
-              Adicione, edite, publique e remova notícias, edições da revista, registos da galeria e vídeos com sincronização instantânea.
-            </p>
-          </div>
-
-          {/* ACTION BUTTONS */}
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => {
-                setEditingArticle(null);
-                setArticleFormOpen(true);
-              }}
-              className="flex items-center gap-1.5 bg-[#d9251d] hover:bg-[#b91e17] text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Nova Notícia</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setEditingConsularDoc(null);
-                setConsularDocFormOpen(true);
-              }}
-              className="flex items-center gap-1.5 bg-rose-800 hover:bg-rose-900 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98"
-            >
-              <Plus className="w-4 h-4" />
-              <FileText className="w-4 h-4" />
-              <span>Novo Documento</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setEditingWonder(null);
-                setWonderFormOpen(true);
-              }}
-              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98"
-            >
-              <Plus className="w-4 h-4" />
-              <Compass className="w-4 h-4" />
-              <span>Nova Maravilha</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setEditingEdition(null);
-                setEditionFormOpen(true);
-              }}
-              className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98"
-            >
-              <Plus className="w-4 h-4" />
-              <BookMarked className="w-4 h-4" />
-              <span>Nova Edição</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setEditingGalleryItem(null);
-                setGalleryFormOpen(true);
-              }}
-              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98"
-            >
-              <Plus className="w-4 h-4" />
-              <ImageIcon className="w-4 h-4" />
-              <span>Nova Imagem</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setEditingVideoItem(null);
-                setVideoFormOpen(true);
-              }}
-              className="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98"
-            >
-              <Plus className="w-4 h-4" />
-              <VideoIcon className="w-4 h-4" />
-              <span>Novo Vídeo</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('agenda-cultural');
-                setCulturalCreateTrigger((prev) => prev + 1);
-              }}
-              className="flex items-center gap-1.5 bg-[#d9251d] hover:bg-[#b91e17] text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98"
-            >
-              <Plus className="w-4 h-4" />
-              <CalendarDays className="w-4 h-4" />
-              <span>Novo Evento Cultural</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('agenda-diplomatica');
-                setDiplomaticCreateTrigger((prev) => prev + 1);
-              }}
-              className="flex items-center gap-1.5 bg-stone-900 hover:bg-stone-800 text-amber-400 border border-amber-500/30 text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98"
-            >
-              <Plus className="w-4 h-4 text-amber-400" />
-              <Landmark className="w-4 h-4 text-amber-400" />
-              <span>Novo Compromisso Diplomático</span>
-            </button>
-          </div>
+        {/* TOP TITLE */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-[#111] flex items-center gap-2">
+            <Layers className="w-6 h-6 text-[#d9251d]" />
+            <span>Gestão de Conteúdos do Portal</span>
+          </h1>
+          <p className="text-xs text-gray-500 mt-1">
+            Adicione, edite, publique e remova notícias, edições da revista, registos da galeria, eventos e vídeos com sincronização instantânea.
+          </p>
         </div>
+
+        {/* MAIN LAYOUT: VERTICAL LEFT SIDEBAR + CONTENT AREA */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* VERTICAL LEFT SIDEBAR: AÇÕES DE CRIAÇÃO */}
+          <aside className="lg:col-span-3 xl:col-span-3">
+            <div className="bg-white p-4 rounded-2xl border border-gray-200/90 shadow-xs lg:sticky lg:top-20 space-y-3">
+              <div className="pb-3 border-b border-gray-100 flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-900 flex items-center gap-1.5">
+                    <Plus className="w-3.5 h-3.5 text-[#d9251d]" />
+                    <span>Adicionar Conteúdo</span>
+                  </h3>
+                  <p className="text-[11px] text-gray-400 mt-0.5">Criar novos registos no portal</p>
+                </div>
+              </div>
+
+              {/* VERTICAL MENU BUTTONS */}
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    setEditingArticle(null);
+                    setArticleFormOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 bg-[#d9251d] hover:bg-[#b91e17] text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98 text-left justify-start"
+                  title="Criar nova notícia"
+                >
+                  <Plus className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Nova Notícia</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setEditingConsularDoc(null);
+                    setConsularDocFormOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 bg-rose-800 hover:bg-rose-900 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98 text-left justify-start"
+                  title="Adicionar documento consular"
+                >
+                  <Plus className="w-4 h-4 shrink-0" />
+                  <FileText className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Novo Documento</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setEditingWonder(null);
+                    setWonderFormOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98 text-left justify-start"
+                  title="Registar nova maravilha natural"
+                >
+                  <Plus className="w-4 h-4 shrink-0" />
+                  <Compass className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Nova Maravilha</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setEditingEdition(null);
+                    setEditionFormOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98 text-left justify-start"
+                  title="Publicar nova edição da revista"
+                >
+                  <Plus className="w-4 h-4 shrink-0" />
+                  <BookMarked className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Nova Edição</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setEditingGalleryItem(null);
+                    setGalleryFormOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98 text-left justify-start"
+                  title="Carregar nova imagem na galeria"
+                >
+                  <Plus className="w-4 h-4 shrink-0" />
+                  <ImageIcon className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Nova Imagem</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setEditingVideoItem(null);
+                    setVideoFormOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98 text-left justify-start"
+                  title="Adicionar novo vídeo institucional"
+                >
+                  <Plus className="w-4 h-4 shrink-0" />
+                  <VideoIcon className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Novo Vídeo</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('agenda-cultural');
+                    setCulturalCreateTrigger((prev) => prev + 1);
+                  }}
+                  className="w-full flex items-center gap-2.5 bg-[#d9251d] hover:bg-[#b91e17] text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98 text-left justify-start"
+                  title="Registar novo evento cultural"
+                >
+                  <Plus className="w-4 h-4 shrink-0" />
+                  <CalendarDays className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Novo Evento Cultural</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('agenda-diplomatica');
+                    setDiplomaticCreateTrigger((prev) => prev + 1);
+                  }}
+                  className="w-full flex items-center gap-2.5 bg-stone-900 hover:bg-stone-800 text-amber-400 border border-amber-500/30 text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98 text-left justify-start"
+                  title="Registar novo compromisso diplomático"
+                >
+                  <Plus className="w-4 h-4 text-amber-400 shrink-0" />
+                  <Landmark className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span className="truncate">Novo Compromisso Diplomático</span>
+                </button>
+              </div>
+            </div>
+          </aside>
+
+          {/* MAIN CONTENT AREA */}
+          <div className="lg:col-span-9 xl:col-span-9 min-w-0">
 
         {/* TABS SELECTOR */}
         <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 mb-6 bg-white p-1.5 rounded-xl shadow-xs">
@@ -2031,6 +2057,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             onShowToast={onShowToast}
           />
         )}
+          </div>
+        </div>
       </main>
 
       {/* ARTICLE FORM MODAL */}

@@ -13,7 +13,9 @@ import {
   Clock, 
   Sparkles, 
   Ticket,
-  AlertTriangle 
+  AlertTriangle,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { CulturalEvent } from '../../../types';
 import {
@@ -21,6 +23,7 @@ import {
   createCulturalEvent,
   updateCulturalEvent,
   deleteCulturalEvent,
+  toggleCulturalEventPublish,
 } from '../../../lib/culturalAgendaService';
 import { CulturalEventFormModal } from '../CulturalEventFormModal';
 
@@ -83,6 +86,21 @@ export const AdminCulturalAgendaSection: React.FC<AdminCulturalAgendaSectionProp
     } catch (err: unknown) {
       console.error(err);
       onShowToast(err instanceof Error ? err.message : 'Erro ao guardar evento.');
+    }
+  };
+
+  const handleTogglePublish = async (event: CulturalEvent) => {
+    try {
+      const updated = await toggleCulturalEventPublish(event.id);
+      onShowToast(
+        updated.isPublished !== false
+          ? 'Evento publicado no portal com sucesso!'
+          : 'Evento movido para rascunho.'
+      );
+      onEventsChanged();
+    } catch (err: unknown) {
+      console.error(err);
+      onShowToast('Falha ao alterar estado de publicação.');
     }
   };
 
@@ -213,6 +231,23 @@ export const AdminCulturalAgendaSection: React.FC<AdminCulturalAgendaSectionProp
                 </div>
 
                 <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => handleTogglePublish(event)}
+                    className={`p-1.5 rounded-lg transition-colors ${
+                      event.isPublished !== false
+                        ? 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'
+                        : 'text-amber-600 hover:text-amber-700 hover:bg-amber-50'
+                    }`}
+                    title={event.isPublished !== false ? 'Despublicar (mudar para rascunho)' : 'Publicar no portal'}
+                  >
+                    {event.isPublished !== false ? (
+                      <Eye className="w-3.5 h-3.5" />
+                    ) : (
+                      <EyeOff className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => {

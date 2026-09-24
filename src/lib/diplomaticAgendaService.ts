@@ -122,31 +122,36 @@ export async function fetchDiplomaticEvents(): Promise<DiplomaticEvent[]> {
     return getLocalDiplomaticEvents();
   }
 
-  const { data, error } = await supabase
-    .from('diplomatic_events')
-    .select('*')
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('diplomatic_events')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  if (error) {
-    if (
-      error.code === 'PGRST205' ||
-      error.message?.includes('relation "public.diplomatic_events" does not exist')
-    ) {
-      console.warn('[Mosaico] Tabela "diplomatic_events" não existe ainda no Supabase. Usando armazenamento local.');
+    if (error) {
+      if (
+        error.code === 'PGRST205' ||
+        error.message?.includes('relation "public.diplomatic_events" does not exist')
+      ) {
+        console.warn('[Mosaico] Tabela "diplomatic_events" não existe ainda no Supabase. Usando armazenamento local.');
+      } else {
+        console.warn('[Mosaico] Aviso ao consultar compromissos diplomáticos no Supabase (usando dados locais):', error.message || error);
+      }
       return getLocalDiplomaticEvents();
     }
-    console.error('Erro ao buscar compromissos diplomáticos no Supabase:', error);
+
+    if (!data || data.length === 0) {
+      return getLocalDiplomaticEvents();
+    }
+
+    const remoteEvents = data.map(rowToDiplomaticEvent);
+    const activeEvents = filterOutDeleted(remoteEvents);
+    saveLocalDiplomaticEvents(activeEvents);
+    return activeEvents;
+  } catch (netErr) {
+    console.warn('[Mosaico] Falha de rede/conexão ao buscar compromissos diplomáticos no Supabase. Usando armazenamento local resiliente:', netErr);
     return getLocalDiplomaticEvents();
   }
-
-  if (!data || data.length === 0) {
-    return getLocalDiplomaticEvents();
-  }
-
-  const remoteEvents = data.map(rowToDiplomaticEvent);
-  const activeEvents = filterOutDeleted(remoteEvents);
-  saveLocalDiplomaticEvents(activeEvents);
-  return activeEvents;
 }
 
 export async function createDiplomaticEvent(input: DiplomaticEventInput): Promise<DiplomaticEvent> {
@@ -169,21 +174,25 @@ export async function createDiplomaticEvent(input: DiplomaticEventInput): Promis
 
   // 2. Se Supabase configurado, persistir
   if (isSupabaseConfigured) {
-    const row = {
-      id,
-      ...diplomaticEventToRow(input),
-    };
+    try {
+      const row = {
+        id,
+        ...diplomaticEventToRow(input),
+      };
 
-    const { data, error } = await supabase
-      .from('diplomatic_events')
-      .insert([row])
-      .select()
-      .single();
+      const { data, error } = await supabase
+        .from('diplomatic_events')
+        .insert([row])
+        .select()
+        .single();
 
-    if (error) {
-      console.warn('[Mosaico] Falha ao persistir compromisso diplomático no Supabase, mantido localmente:', error.message);
-    } else if (data) {
-      return rowToDiplomaticEvent(data);
+      if (error) {
+        console.warn('[Mosaico] Falha ao persistir compromisso diplomático no Supabase, mantido localmente:', error.message);
+      } else if (data) {
+        return rowToDiplomaticEvent(data);
+      }
+    } catch (err) {
+      console.warn('[Mosaico] Exceção de rede ao persistir compromisso diplomático no Supabase, mantido localmente:', err);
     }
   }
 
@@ -210,35 +219,52 @@ export async function updateDiplomaticEvent(
 
   // 2. Se Supabase configurado, atualizar
   if (isSupabaseConfigured) {
-    const patch: Record<string, unknown> = {};
-    if (input.title !== undefined) patch.title = input.title;
-    if (input.category !== undefined) patch.category = input.category;
-    if (input.date !== undefined) patch.date_label = input.date;
-    if (input.time !== undefined) patch.time_label = input.time;
-    if (input.location !== undefined) patch.location = input.location;
-    if (input.city !== undefined) patch.city = input.city;
-    if (input.description !== undefined) patch.description = input.description;
-    if (input.organizer !== undefined) patch.organizer = input.organizer;
-    if (input.imageUrl !== undefined) patch.image_url = input.imageUrl || null;
-    if (input.registrationRequired !== undefined) patch.registration_required = input.registrationRequired;
-    if (input.status !== undefined) patch.status = input.status;
-    if (input.isPublished !== undefined) patch.is_published = input.isPublished;
+    try {
+      const patch: Record<string, unknown> = {};
+      if (input.title !== undefined) patch.title = input.title;
+      if (input.category !== undefined) patch.category = input.category;
+      if (input.date !== undefined) patch.date_label = input.date;
+      if (input.time !== undefined) patch.time_label = input.time;
+      if (input.location !== undefined) patch.location = input.location;
+      if (input.city !== undefined) patch.city = input.city;
+      if (input.description !== undefined) patch.description = input.description;
+      if (input.organizer !== undefined) patch.organizer = input.organizer;
+      if (input.imageUrl !== undefined) patch.image_url = input.imageUrl || null;
+      if (input.registrationRequired !== undefined) patch.registration_required = input.registrationRequired;
+      if (input.status !== undefined) patch.status = input.status;
+      if (input.isPublished !== undefined) patch.is_published = input.isPublished;
 
-    const { data, error } = await supabase
-      .from('diplomatic_events')
-      .update(patch)
-      .eq('id', id)
-      .select()
-      .single();
+      const { data, error } = await supabase
+        .from('diplomatic_events')
+        .update(patch)
+        .eq('id', id)
+        .select()
+        .single();
 
-    if (error) {
-      console.warn('[Mosaico] Falha ao atualizar compromisso diplomático no Supabase, mantido localmente:', error.message);
-    } else if (data) {
-      return rowToDiplomaticEvent(data);
+      if (error) {
+        console.warn('[Mosaico] Falha ao atualizar compromisso diplomático no Supabase, mantido localmente:', error.message);
+      } else if (data) {
+        return rowToDiplomaticEvent(data);
+      }
+    } catch (err) {
+      console.warn('[Mosaico] Exceção de rede ao atualizar compromisso diplomático no Supabase, mantido localmente:', err);
     }
   }
 
   return updatedEvent;
+}
+
+export async function toggleDiplomaticEventPublish(id: string): Promise<DiplomaticEvent> {
+  const current = getLocalDiplomaticEvents();
+  const index = current.findIndex((e) => e.id === id);
+  if (index === -1) {
+    throw new Error('Compromisso diplomático não encontrado');
+  }
+
+  const currentStatus = current[index].isPublished !== false;
+  const newStatus = !currentStatus;
+
+  return updateDiplomaticEvent(id, { isPublished: newStatus });
 }
 
 export async function deleteDiplomaticEvent(id: string): Promise<void> {
@@ -251,13 +277,17 @@ export async function deleteDiplomaticEvent(id: string): Promise<void> {
 
   // 2. Remover do Supabase se configurado
   if (isSupabaseConfigured) {
-    const { error } = await supabase
-      .from('diplomatic_events')
-      .delete()
-      .eq('id', id);
+    try {
+      const { error } = await supabase
+        .from('diplomatic_events')
+        .delete()
+        .eq('id', id);
 
-    if (error) {
-      console.warn('[Mosaico] Falha ao apagar compromisso diplomático no Supabase:', error.message);
+      if (error) {
+        console.warn('[Mosaico] Falha ao apagar compromisso diplomático no Supabase:', error.message);
+      }
+    } catch (err) {
+      console.warn('[Mosaico] Exceção de rede ao apagar compromisso diplomático no Supabase:', err);
     }
   }
 }
