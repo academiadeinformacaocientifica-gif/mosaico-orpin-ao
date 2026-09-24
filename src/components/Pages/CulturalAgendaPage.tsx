@@ -212,18 +212,6 @@ export const CulturalAgendaPage: React.FC<CulturalAgendaPageProps> = ({ events: 
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-                
-                {/* CATEGORY BADGE */}
-                <span className="absolute top-3 left-3 bg-[#d9251d] text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-md">
-                  {event.category}
-                </span>
-
-                {event.highlight && (
-                  <span className="absolute top-3 right-3 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md">
-                    <Sparkles className="w-3 h-3" />
-                    <span>Destaque</span>
-                  </span>
-                )}
 
                 <div className="absolute bottom-3 left-3 right-3 text-white">
                   <div className="flex items-center gap-1.5 text-xs text-stone-200 font-medium mb-1">

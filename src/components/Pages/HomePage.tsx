@@ -4,6 +4,8 @@ import {
   ArrowRight, 
   BookOpen, 
   Calendar, 
+  CalendarDays,
+  Clock,
   MapPin, 
   Compass, 
   Award,
@@ -11,8 +13,9 @@ import {
   ThumbsUp,
   MessageSquare
 } from 'lucide-react';
-import { Article, MagazineEdition, DiplomaticEvent, NavPage, GalleryItem } from '../../types';
+import { Article, MagazineEdition, DiplomaticEvent, NavPage, GalleryItem, CulturalEvent } from '../../types';
 import { NaturalWonder } from '../../data/wondersData';
+import { getLocalCulturalEvents } from '../../lib/culturalAgendaService';
 import { HeroCarousel } from '../HeroCarousel';
 import { ArticleCard } from '../ArticleCard';
 import { WondersBanner } from '../WondersBanner';
@@ -24,6 +27,7 @@ interface HomePageProps {
   magazineEditions: MagazineEdition[];
   upcomingEvents: DiplomaticEvent[];
   galleryItems?: GalleryItem[];
+  culturalEvents?: CulturalEvent[];
   wonders?: NaturalWonder[];
   onOpenArticle: (article: Article) => void;
   onOpenEdition: (edition: MagazineEdition) => void;
@@ -41,6 +45,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   magazineEditions,
   upcomingEvents,
   galleryItems = [],
+  culturalEvents,
   wonders,
   onOpenArticle,
   onOpenEdition,
@@ -52,6 +57,14 @@ export const HomePage: React.FC<HomePageProps> = ({
 }) => {
   // Regra: Sempre apenas as 4 imagens mais recentes publicadas
   const featuredImages = galleryItems.slice(0, 4);
+
+  // Eventos culturais publicados mais recentes (até 4)
+  const baseCulturalEvents = culturalEvents && culturalEvents.length > 0 
+    ? culturalEvents 
+    : getLocalCulturalEvents();
+  const featuredCulturalEvents = baseCulturalEvents
+    .filter((e) => e.isPublished !== false)
+    .slice(0, 4);
   return (
     <div className="space-y-10 animate-in fade-in duration-300">
       
@@ -254,9 +267,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     referrerPolicy="no-referrer"
                   />
-                  <span className="absolute top-2 left-2 bg-black/60 backdrop-blur-xs text-white text-[9px] font-bold uppercase px-2 py-0.5 rounded">
-                    {item.category}
-                  </span>
                   {item.date && (
                     <span className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-xs text-white text-[9px] font-medium px-1.5 py-0.5 rounded">
                       {item.date}
@@ -278,6 +288,95 @@ export const HomePage: React.FC<HomePageProps> = ({
         ) : (
           <div className="bg-white rounded-xl p-8 text-center border border-gray-200 text-gray-500 text-xs">
             Nenhuma imagem disponível no momento.
+          </div>
+        )}
+      </section>
+
+      {/* SECTION: AGENDA CULTURAL */}
+      <section className="pt-2">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="section-title text-xl sm:text-2xl font-bold text-[#111]">
+              Agenda Cultural
+            </h2>
+            <p className="section-subtitle text-xs sm:text-sm text-[#666]">
+              Mostras de cinema, exposições artísticas, espetáculos e celebrações que projetam a identidade cultural de Angola
+            </p>
+          </div>
+
+          <button
+            onClick={() => onNavigate('agenda-cultural')}
+            className="text-xs font-bold text-[#d9251d] hover:text-[#b01b14] flex items-center gap-1 cursor-pointer transition-colors"
+          >
+            <span>Ver Agenda Completa</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {featuredCulturalEvents.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            {featuredCulturalEvents.map((event) => (
+              <div
+                key={event.id}
+                onClick={() => onNavigate('agenda-cultural')}
+                className="bg-white rounded-xl border border-gray-200/80 overflow-hidden shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col"
+              >
+                <div className="h-36 overflow-hidden relative bg-gray-100">
+                  <img
+                    src={event.imageUrl}
+                    alt={event.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute bottom-2 left-2 right-2 text-white">
+                    <span className="bg-black/70 backdrop-blur-xs text-stone-200 text-[10px] font-medium px-2 py-0.5 rounded inline-flex items-center gap-1">
+                      <CalendarDays className="w-3 h-3 text-red-400" />
+                      <span>{event.date}</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-3 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-xs font-bold text-gray-900 line-clamp-2 mb-1 group-hover:text-[#d9251d] transition-colors leading-snug">
+                      {event.title}
+                    </h3>
+                    <p className="text-[11px] text-gray-500 line-clamp-2 leading-relaxed mb-2">
+                      {event.description}
+                    </p>
+                    <div className="space-y-1 text-[11px] text-gray-500">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-3 h-3 text-[#d9251d] shrink-0" />
+                        <span>{event.time}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="w-3 h-3 text-[#d9251d] shrink-0" />
+                        <span className="line-clamp-1">{event.city}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 mt-2 border-t border-gray-100 flex items-center justify-between">
+                    {event.registrationRequired ? (
+                      <span className="text-[9px] bg-amber-50 text-amber-700 font-semibold px-1.5 py-0.5 rounded border border-amber-200">
+                        Inscrição Prévia
+                      </span>
+                    ) : (
+                      <span className="text-[9px] bg-emerald-50 text-emerald-700 font-semibold px-1.5 py-0.5 rounded border border-emerald-200">
+                        Entrada Livre
+                      </span>
+                    )}
+                    <span className="text-[11px] font-medium text-[#d9251d] inline-flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                      <span>Ver Todos</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl p-8 text-center border border-gray-200 text-gray-500 text-xs">
+            Nenhum evento cultural agendado no momento.
           </div>
         )}
       </section>

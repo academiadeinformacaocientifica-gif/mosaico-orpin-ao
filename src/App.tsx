@@ -903,6 +903,7 @@ function PageSwitch() {
           upcomingEvents={upcomingEvents}
           galleryItems={publicGalleryItems}
           wonders={publicNaturalWonders}
+          culturalEvents={culturalEventsList}
           onOpenArticle={handleOpenArticle}
           onOpenEdition={setSelectedEdition}
           onToggleBookmark={handleToggleBookmark}
