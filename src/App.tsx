@@ -34,6 +34,7 @@ import { angolaNaturalWonders, NaturalWonder } from './data/wondersData';
 import { consularDocuments } from './data/consularServices';
 import { upcomingEvents } from './data/events';
 import { Header } from './components/Header';
+import { NewsTicker } from './components/NewsTicker';
 import { Footer } from './components/Footer';
 import { Toast } from './components/Toast';
 import { ArticlePage } from './components/Pages/ArticlePage';
@@ -722,6 +723,12 @@ function SiteLayout({
           const found = articles.find((a) => a.id === id);
           if (found) onOpenArticle(found);
         }}
+      />
+
+      {/* SCROLLER COM TÍTULOS DAS NOTÍCIAS EM DESTAQUE DOS SLIDES */}
+      <NewsTicker
+        articles={context.carouselArticles}
+        onOpenArticle={onOpenArticle}
       />
 
       <main className="max-w-[1240px] w-full mx-auto px-4 sm:px-6 flex-1">
