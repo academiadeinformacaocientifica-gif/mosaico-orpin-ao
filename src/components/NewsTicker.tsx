@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Sparkles, TrendingUp } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import { Article } from '../types';
 
 interface NewsTickerProps {
@@ -60,8 +60,8 @@ export const NewsTicker: React.FC<NewsTickerProps> = ({
                 </span>
 
                 {/* Separador entre títulos */}
-                <span className="inline-flex items-center justify-center ml-6 text-[#d9251d]/40 group-hover:text-[#d9251d] transition-colors">
-                  <Sparkles className="w-3 h-3 text-[#d9251d]" />
+                <span className="inline-flex items-center justify-center ml-5 text-stone-300 font-light select-none group-hover:text-stone-400 transition-colors" aria-hidden="true">
+                  |
                 </span>
               </button>
             ))}
