@@ -342,7 +342,7 @@ export const CulturalAgendaPage: React.FC<CulturalAgendaPageProps> = ({ events: 
             className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 my-auto flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* HERO IMAGE COM BADGES E BOTÃO FECHAR */}
+            {/* HERO IMAGE COM BOTÃO FECHAR */}
             <div className="relative h-56 sm:h-72 w-full overflow-hidden bg-stone-900 shrink-0">
               <img
                 src={selectedEvent.imageUrl}
@@ -360,20 +360,6 @@ export const CulturalAgendaPage: React.FC<CulturalAgendaPageProps> = ({ events: 
               >
                 <X className="w-5 h-5" />
               </button>
-
-              {/* BADGES NO TOPO */}
-              <div className="absolute top-4 left-4 flex flex-wrap items-center gap-2">
-                <span className="bg-[#d9251d] text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-lg">
-                  {selectedEvent.category}
-                </span>
-
-                {selectedEvent.highlight && (
-                  <span className="bg-amber-500 text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-lg">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Evento em Destaque</span>
-                  </span>
-                )}
-              </div>
 
               {/* INFORMAÇÕES DE CABEÇALHO NA IMAGEM */}
               <div className="absolute bottom-4 left-4 right-4 text-white">
