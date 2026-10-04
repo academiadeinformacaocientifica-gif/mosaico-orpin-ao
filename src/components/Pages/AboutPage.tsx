@@ -186,7 +186,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onShowToast }) => {
                   <option value="Geral">Informações Gerais e Institucionais</option>
                   <option value="Consular">Assuntos Consulares e Vistos</option>
                   <option value="Economico">Gabinete Económico e Investimento</option>
-                  <option value="Cultural">Sector Cultural e Revista Mosaico</option>
+                  <option value="Cultural">Sector Cultural e Revista Mosaico Angola</option>
                   <option value="Imprensa">Gabinete de Imprensa e Comunicação</option>
                 </select>
               </div>

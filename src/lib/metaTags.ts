@@ -6,7 +6,7 @@
 import { Article } from '../types';
 
 export const DEFAULT_PORTAL_META = {
-  title: 'MOSAICO - Revista Oficial da Embaixada de Angola em Espanha',
+  title: 'MOSAICO ANGOLA - Revista Oficial da Embaixada de Angola em Espanha',
   description:
     'Revista oficial e portal informativo da Embaixada da República de Angola no Reino de Espanha e Principado de Andorra com notícias diplomáticas, consulares, culturais e turísticas.',
   image: '/src/assets/images/icon_mosaico_square_1787501925065.jpg',
@@ -64,7 +64,7 @@ function setOrCreateLink(rel: string, href: string): void {
 export function updateArticleMetaTags(article: Article): void {
   if (typeof window === 'undefined') return;
 
-  const title = `${article.title} | MOSAICO ANGOLANO`;
+  const title = `${article.title} | MOSAICO ANGOLA`;
   const description = article.description || article.subtitle || DEFAULT_PORTAL_META.description;
   const absoluteImage = getAbsoluteImageUrl(article.imageUrl);
   const currentUrl = window.location.href;
@@ -77,7 +77,7 @@ export function updateArticleMetaTags(article: Article): void {
 
   // Open Graph (WhatsApp, Facebook, LinkedIn, Telegram)
   setOrCreateMeta('property', 'og:type', 'article');
-  setOrCreateMeta('property', 'og:site_name', 'MOSAICO ANGOLANO');
+  setOrCreateMeta('property', 'og:site_name', 'MOSAICO ANGOLA');
   setOrCreateMeta('property', 'og:title', article.title);
   setOrCreateMeta('property', 'og:description', description);
   setOrCreateMeta('property', 'og:url', currentUrl);
@@ -114,7 +114,7 @@ export function resetPortalMetaTags(): void {
   setOrCreateMeta('name', 'description', DEFAULT_PORTAL_META.description);
 
   setOrCreateMeta('property', 'og:type', 'website');
-  setOrCreateMeta('property', 'og:site_name', 'MOSAICO ANGOLANO');
+  setOrCreateMeta('property', 'og:site_name', 'MOSAICO ANGOLA');
   setOrCreateMeta('property', 'og:title', DEFAULT_PORTAL_META.title);
   setOrCreateMeta('property', 'og:description', DEFAULT_PORTAL_META.description);
   setOrCreateMeta('property', 'og:url', origin);

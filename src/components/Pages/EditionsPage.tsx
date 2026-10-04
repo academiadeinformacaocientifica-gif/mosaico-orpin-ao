@@ -25,7 +25,7 @@ export const EditionsPage: React.FC<EditionsPageProps> = ({
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#111] mb-1.5 flex items-center gap-2.5">
             <BookMarked className="w-6 h-6 text-[#d9251d]" />
-            <span>Arquivo de Edições da Revista Mosaico</span>
+            <span>Arquivo de Edições da Revista Mosaico Angola</span>
           </h1>
           <p className="text-xs sm:text-sm text-[#666]">
             Consulte, leia online e descarregue os volumes trimestrais da revista oficial da Embaixada.
@@ -45,7 +45,7 @@ export const EditionsPage: React.FC<EditionsPageProps> = ({
             Nenhuma edição disponível no momento
           </h3>
           <p className="text-xs text-gray-500">
-            Novos volumes da Revista Mosaico serão disponibilizados em breve.
+            Novos volumes da Revista Mosaico Angola serão disponibilizados em breve.
           </p>
         </div>
       ) : (

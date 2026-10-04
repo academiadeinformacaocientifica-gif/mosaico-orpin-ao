@@ -75,7 +75,7 @@ export const ArticlePage: React.FC<ArticlePageProps> = ({
   const handleShare = () => {
     const url = window.location.href;
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(`${article.title} - Leia na Revista Mosaico: ${url}`);
+      navigator.clipboard.writeText(`${article.title} - Leia na Revista Mosaico Angola: ${url}`);
       setCopiedLink(true);
       onShowToast('Link do artigo copiado para a área de transferência!');
       setTimeout(() => setCopiedLink(false), 3000);
@@ -107,7 +107,7 @@ export const ArticlePage: React.FC<ArticlePageProps> = ({
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim()) return;
-    const finalAuthor = authorName.trim() || 'Leitor(a) Mosaico';
+    const finalAuthor = authorName.trim() || 'Leitor(a) Mosaico Angola';
     onAddComment(article.id, newComment.trim(), finalAuthor);
     setNewComment('');
     onShowToast('Comentário publicado com sucesso!');

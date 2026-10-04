@@ -133,9 +133,9 @@ export async function fetchGalleryItems(): Promise<GalleryItem[]> {
         error.code === 'PGRST205' ||
         error.message?.includes('relation "public.gallery_items" does not exist')
       ) {
-        console.warn('[Mosaico] Tabela "gallery_items" não existe ainda no Supabase. Usando armazenamento local.');
+        console.warn('[Mosaico Angola] Tabela "gallery_items" não existe ainda no Supabase. Usando armazenamento local.');
       } else {
-        console.warn('[Mosaico] Aviso ao consultar galeria no Supabase (usando dados locais):', error.message || error);
+        console.warn('[Mosaico Angola] Aviso ao consultar galeria no Supabase (usando dados locais):', error.message || error);
       }
       return getLocalGallery();
     }
@@ -150,7 +150,7 @@ export async function fetchGalleryItems(): Promise<GalleryItem[]> {
         (async () => {
           try {
             await supabase.from('gallery_items').upsert(rows, { onConflict: 'id' });
-            console.log('[Mosaico] Galeria inicial sincronizada com sucesso no Supabase.');
+            console.log('[Mosaico Angola] Galeria inicial sincronizada com sucesso no Supabase.');
           } catch (err) {
             console.warn('Erro ao semear galeria inicial:', err);
           }
@@ -164,7 +164,7 @@ export async function fetchGalleryItems(): Promise<GalleryItem[]> {
     saveLocalGallery(validFromDb);
     return validFromDb;
   } catch (netErr) {
-    console.warn('[Mosaico] Falha de rede/conexão ao buscar galeria no Supabase. Usando armazenamento local resiliente:', netErr);
+    console.warn('[Mosaico Angola] Falha de rede/conexão ao buscar galeria no Supabase. Usando armazenamento local resiliente:', netErr);
     return getLocalGallery();
   }
 }
@@ -324,7 +324,7 @@ export async function deleteGalleryItem(id: string): Promise<void> {
     try {
       const { error } = await supabase.from('gallery_items').delete().eq('id', id);
       if (error) {
-        console.warn('[Mosaico] Aviso ao eliminar galeria no Supabase:', error.message || error);
+        console.warn('[Mosaico Angola] Aviso ao eliminar galeria no Supabase:', error.message || error);
       }
     } catch (e) {
       console.warn('Error deleting gallery item on Supabase:', e);

@@ -111,7 +111,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onBackToSite }) 
           {/* LOGO & TITULO */}
           <div className="flex flex-col items-center mb-6">
             <div className="bg-[#d9251d] text-white font-bold text-lg px-4 py-1.5 rounded-tl-xl rounded-br-xl uppercase tracking-wider mb-3">
-              MOSAICO
+              MOSAICO ANGOLA
             </div>
             <h1 className="text-lg font-bold text-[#111]">Área Reservada de Redação</h1>
             <p className="text-xs text-gray-500 mt-1 text-center">
@@ -321,7 +321,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onBackToSite }) 
 
           <div className="mt-6 pt-4 border-t border-gray-100 text-center">
             <p className="text-[11px] text-gray-400">
-              Mosaico Angolano — Sistema de Gestão de Notícias
+              Mosaico Angola — Sistema de Gestão de Conteúdos
             </p>
           </div>
         </div>

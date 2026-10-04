@@ -26,7 +26,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('[Mosaico Angolano ErrorBoundary] Erro capturado:', error, errorInfo);
+    console.error('[Mosaico Angola ErrorBoundary] Erro capturado:', error, errorInfo);
   }
 
   private handleReload = () => {

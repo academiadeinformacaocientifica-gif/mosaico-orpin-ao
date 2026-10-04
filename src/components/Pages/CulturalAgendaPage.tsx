@@ -68,12 +68,12 @@ export const CulturalAgendaPage: React.FC<CulturalAgendaPageProps> = ({ events: 
   const handleShare = (event: CulturalEvent) => {
     if (navigator.share) {
       navigator.share({
-        title: `${event.title} | Agenda Cultural Mosaico`,
+        title: `${event.title} | Agenda Cultural Mosaico Angola`,
         text: `${event.title} - ${event.date} em ${event.location}, ${event.city}.`,
         url: window.location.href,
       }).catch(() => {});
     } else {
-      navigator.clipboard.writeText(`${event.title} - ${event.date} às ${event.time} em ${event.location}. Mais informações no Portal Mosaico.`);
+      navigator.clipboard.writeText(`${event.title} - ${event.date} às ${event.time} em ${event.location}. Mais informações no Portal Mosaico Angola.`);
       onShowToast?.('Ligação do evento copiada para a área de transferência!');
     }
   };
@@ -83,7 +83,7 @@ export const CulturalAgendaPage: React.FC<CulturalAgendaPageProps> = ({ events: 
     const icsContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//Revista Mosaico//Agenda Cultural//PT',
+      'PRODID:-//Revista Mosaico Angola//Agenda Cultural//PT',
       'BEGIN:VEVENT',
       `SUMMARY:${event.title}`,
       `DESCRIPTION:${event.description}\\n\\nOrganizador: ${event.organizer}`,

@@ -126,9 +126,9 @@ export async function fetchVideoItems(): Promise<VideoItem[]> {
         error.code === 'PGRST205' ||
         error.message?.includes('relation "public.video_items" does not exist')
       ) {
-        console.warn('[Mosaico] Tabela "video_items" não existe ainda no Supabase. Usando armazenamento local.');
+        console.warn('[Mosaico Angola] Tabela "video_items" não existe ainda no Supabase. Usando armazenamento local.');
       } else {
-        console.warn('[Mosaico] Aviso ao consultar vídeos no Supabase (usando dados locais):', error.message || error);
+        console.warn('[Mosaico Angola] Aviso ao consultar vídeos no Supabase (usando dados locais):', error.message || error);
       }
       return getLocalVideos();
     }
@@ -143,7 +143,7 @@ export async function fetchVideoItems(): Promise<VideoItem[]> {
         (async () => {
           try {
             await supabase.from('video_items').upsert(rows, { onConflict: 'id' });
-            console.log('[Mosaico] Vídeos iniciais sincronizados com sucesso no Supabase.');
+            console.log('[Mosaico Angola] Vídeos iniciais sincronizados com sucesso no Supabase.');
           } catch (err) {
             console.warn('Erro ao semear vídeos iniciais:', err);
           }
@@ -157,7 +157,7 @@ export async function fetchVideoItems(): Promise<VideoItem[]> {
     saveLocalVideos(validFromDb);
     return validFromDb;
   } catch (netErr) {
-    console.warn('[Mosaico] Falha de rede/conexão ao buscar vídeos no Supabase. Usando armazenamento local resiliente:', netErr);
+    console.warn('[Mosaico Angola] Falha de rede/conexão ao buscar vídeos no Supabase. Usando armazenamento local resiliente:', netErr);
     return getLocalVideos();
   }
 }
@@ -309,7 +309,7 @@ export async function deleteVideoItem(id: string): Promise<void> {
     try {
       const { error } = await supabase.from('video_items').delete().eq('id', id);
       if (error) {
-        console.warn('[Mosaico] Aviso ao eliminar vídeo no Supabase:', error.message || error);
+        console.warn('[Mosaico Angola] Aviso ao eliminar vídeo no Supabase:', error.message || error);
       }
     } catch (e) {
       console.warn('Error deleting video item on Supabase:', e);

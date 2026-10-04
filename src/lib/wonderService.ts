@@ -172,9 +172,9 @@ export async function fetchNaturalWonders(): Promise<NaturalWonder[]> {
         error.code === 'PGRST205' ||
         error.message?.includes('relation "public.natural_wonders" does not exist')
       ) {
-        console.warn('[Mosaico] Tabela "natural_wonders" não existe ainda no Supabase. Usando dados locais.');
+        console.warn('[Mosaico Angola] Tabela "natural_wonders" não existe ainda no Supabase. Usando dados locais.');
       } else {
-        console.warn('[Mosaico] Aviso ao consultar maravilhas no Supabase (usando dados locais):', error.message || error);
+        console.warn('[Mosaico Angola] Aviso ao consultar maravilhas no Supabase (usando dados locais):', error.message || error);
       }
       return getLocalWonders();
     }
@@ -351,7 +351,7 @@ export async function deleteNaturalWonder(id: string): Promise<void> {
     try {
       const { error } = await supabase.from('natural_wonders').delete().eq('id', id);
       if (error) {
-        console.warn('[Mosaico] Aviso ao eliminar maravilha no Supabase:', error.message || error);
+        console.warn('[Mosaico Angola] Aviso ao eliminar maravilha no Supabase:', error.message || error);
       }
     } catch (e) {
       console.warn('Error deleting natural wonder on Supabase:', e);

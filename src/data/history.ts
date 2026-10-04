@@ -46,7 +46,7 @@ export const diplomaticMilestones: HistoricalMilestone[] = [
   {
     year: 2026,
     dateStr: 'Ano em Curso - 2026',
-    title: 'Lançamento da Plataforma Digital Mosaico Angolano',
+    title: 'Lançamento da Plataforma Digital Mosaico Angola',
     description: 'Modernização e digitalização integral dos órgãos de difusão da Embaixada, garantindo acesso em tempo real a notícias, serviços consulares e agenda cultural.',
     significance: 'Democratização do acesso à informação institucional e estreitamento de laços com a diáspora.'
   }

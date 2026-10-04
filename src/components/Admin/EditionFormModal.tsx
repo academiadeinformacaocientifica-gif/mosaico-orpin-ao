@@ -160,8 +160,8 @@ export const EditionFormModal: React.FC<EditionFormModalProps> = ({
             <div>
               <h2 className="text-base font-bold text-[#111]">
                 {isEditing
-                  ? 'Editar Edição da Revista Mosaico'
-                  : 'Criar Nova Edição da Revista Mosaico'}
+                  ? 'Editar Edição da Revista Mosaico Angola'
+                  : 'Criar Nova Edição da Revista Mosaico Angola'}
               </h2>
               <p className="text-[11px] text-gray-500">
                 Publicação trimestral da Chancelaria de Angola

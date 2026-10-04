@@ -82,7 +82,7 @@ export const MagazineReaderModal: React.FC<MagazineReaderModalProps> = ({
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-5 flex flex-col justify-end">
                 <span className="bg-[#d9251d] text-white text-[10px] font-bold uppercase px-2 py-0.5 rounded-sm w-max mb-1">
-                  Mosaico Angolano
+                  Mosaico Angola
                 </span>
                 <h3 className="text-white text-base font-bold">{edition.title}</h3>
                 <p className="text-gray-300 text-xs mt-1">{edition.theme}</p>

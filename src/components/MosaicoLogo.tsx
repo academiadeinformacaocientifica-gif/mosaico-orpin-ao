@@ -25,7 +25,7 @@ export const MosaicoLogo: React.FC<MosaicoLogoProps> = ({
       <div className={`relative inline-flex items-center justify-center shrink-0 overflow-hidden rounded-md bg-[#e61e14] shadow-xs ${sizeClasses[size]} ${className}`}>
         <img 
           src={iconMosaicoSquareImg} 
-          alt="Ícone Oficial Revista Mosaico" 
+          alt="Ícone Oficial Revista Mosaico Angola" 
           className="w-full h-full object-cover"
         />
       </div>
@@ -36,7 +36,7 @@ export const MosaicoLogo: React.FC<MosaicoLogoProps> = ({
     return (
       <div className={`inline-flex items-center bg-[#e61e14] px-2.5 py-1 rounded-sm shadow-xs ${className}`}>
         <span className="font-extrabold text-white text-xs tracking-wider uppercase font-sans">
-          MOSAICO
+          MOSAICO ANGOLA
         </span>
       </div>
     );
@@ -54,7 +54,7 @@ export const MosaicoLogo: React.FC<MosaicoLogoProps> = ({
     <div className={`inline-flex items-center justify-center overflow-hidden rounded-md bg-[#e61e14] shadow-xs ${heightClasses[size]} ${className}`}>
       <img 
         src={logoMosaicoImg} 
-        alt="Logo Oficial Revista MOSAICO" 
+        alt="Logo Oficial Revista MOSAICO ANGOLA" 
         className="h-full w-auto object-contain max-w-full"
       />
     </div>

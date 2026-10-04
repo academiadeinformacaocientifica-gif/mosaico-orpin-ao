@@ -27,8 +27,8 @@ interface DatabaseStatusModalProps {
 }
 
 const SUPABASE_SCHEMA_SQL = `-- ============================================================================
--- Mosaico Angolano — Esquema Completo do Backend (Supabase)
--- Notícias + Galeria Fotográfica + Vídeos + Revista Mosaico + 7 Maravilhas de Angola
+-- Mosaico Angola — Esquema Completo do Backend (Supabase)
+-- Notícias + Galeria Fotográfica + Vídeos + Revista Mosaico Angola + 7 Maravilhas de Angola
 -- ============================================================================
 
 -- 1. TABELA DE UTILIZADORES / PERFIS DE REDAÇÃO -------------------------------
@@ -120,7 +120,7 @@ end $$;
 
 alter table public.video_items add column if not exists is_published boolean not null default true;
 
--- 5. TABELA DE EDIÇÕES DA REVISTA MOSAICO ------------------------------------
+-- 5. TABELA DE EDIÇÕES DA REVISTA MOSAICO ANGOLA ------------------------------------
 create table if not exists public.magazine_editions (
   id             text primary key,
   edition_number integer not null,

@@ -133,9 +133,9 @@ export async function fetchCulturalEvents(): Promise<CulturalEvent[]> {
         error.code === 'PGRST205' ||
         error.message?.includes('relation "public.cultural_events" does not exist')
       ) {
-        console.warn('[Mosaico] Tabela "cultural_events" não existe ainda no Supabase. Usando armazenamento local.');
+        console.warn('[Mosaico Angola] Tabela "cultural_events" não existe ainda no Supabase. Usando armazenamento local.');
       } else {
-        console.warn('[Mosaico] Aviso ao consultar eventos culturais no Supabase (usando dados locais):', error.message || error);
+        console.warn('[Mosaico Angola] Aviso ao consultar eventos culturais no Supabase (usando dados locais):', error.message || error);
       }
       return getLocalCulturalEvents();
     }
@@ -149,7 +149,7 @@ export async function fetchCulturalEvents(): Promise<CulturalEvent[]> {
     saveLocalCulturalEvents(activeEvents);
     return activeEvents;
   } catch (netErr) {
-    console.warn('[Mosaico] Falha de rede/conexão ao buscar eventos culturais no Supabase. Usando armazenamento local resiliente:', netErr);
+    console.warn('[Mosaico Angola] Falha de rede/conexão ao buscar eventos culturais no Supabase. Usando armazenamento local resiliente:', netErr);
     return getLocalCulturalEvents();
   }
 }
@@ -187,12 +187,12 @@ export async function createCulturalEvent(input: CulturalEventInput): Promise<Cu
         .single();
 
       if (error) {
-        console.warn('[Mosaico] Falha ao persistir evento cultural no Supabase, mantido localmente:', error.message);
+        console.warn('[Mosaico Angola] Falha ao persistir evento cultural no Supabase, mantido localmente:', error.message);
       } else if (data) {
         return rowToCulturalEvent(data);
       }
     } catch (err) {
-      console.warn('[Mosaico] Exceção de rede ao persistir evento cultural no Supabase, mantido localmente:', err);
+      console.warn('[Mosaico Angola] Exceção de rede ao persistir evento cultural no Supabase, mantido localmente:', err);
     }
   }
 
@@ -242,12 +242,12 @@ export async function updateCulturalEvent(
         .single();
 
       if (error) {
-        console.warn('[Mosaico] Falha ao atualizar evento cultural no Supabase, mantido localmente:', error.message);
+        console.warn('[Mosaico Angola] Falha ao atualizar evento cultural no Supabase, mantido localmente:', error.message);
       } else if (data) {
         return rowToCulturalEvent(data);
       }
     } catch (err) {
-      console.warn('[Mosaico] Exceção de rede ao atualizar evento cultural no Supabase, mantido localmente:', err);
+      console.warn('[Mosaico Angola] Exceção de rede ao atualizar evento cultural no Supabase, mantido localmente:', err);
     }
   }
 
@@ -284,10 +284,10 @@ export async function deleteCulturalEvent(id: string): Promise<void> {
         .eq('id', id);
 
       if (error) {
-        console.warn('[Mosaico] Falha ao apagar evento cultural no Supabase:', error.message);
+        console.warn('[Mosaico Angola] Falha ao apagar evento cultural no Supabase:', error.message);
       }
     } catch (err) {
-      console.warn('[Mosaico] Exceção de rede ao apagar evento cultural no Supabase:', err);
+      console.warn('[Mosaico Angola] Exceção de rede ao apagar evento cultural no Supabase:', err);
     }
   }
 }

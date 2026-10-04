@@ -133,9 +133,9 @@ export async function fetchDiplomaticEvents(): Promise<DiplomaticEvent[]> {
         error.code === 'PGRST205' ||
         error.message?.includes('relation "public.diplomatic_events" does not exist')
       ) {
-        console.warn('[Mosaico] Tabela "diplomatic_events" não existe ainda no Supabase. Usando armazenamento local.');
+        console.warn('[Mosaico Angola] Tabela "diplomatic_events" não existe ainda no Supabase. Usando armazenamento local.');
       } else {
-        console.warn('[Mosaico] Aviso ao consultar compromissos diplomáticos no Supabase (usando dados locais):', error.message || error);
+        console.warn('[Mosaico Angola] Aviso ao consultar compromissos diplomáticos no Supabase (usando dados locais):', error.message || error);
       }
       return getLocalDiplomaticEvents();
     }
@@ -149,7 +149,7 @@ export async function fetchDiplomaticEvents(): Promise<DiplomaticEvent[]> {
     saveLocalDiplomaticEvents(activeEvents);
     return activeEvents;
   } catch (netErr) {
-    console.warn('[Mosaico] Falha de rede/conexão ao buscar compromissos diplomáticos no Supabase. Usando armazenamento local resiliente:', netErr);
+    console.warn('[Mosaico Angola] Falha de rede/conexão ao buscar compromissos diplomáticos no Supabase. Usando armazenamento local resiliente:', netErr);
     return getLocalDiplomaticEvents();
   }
 }
@@ -187,12 +187,12 @@ export async function createDiplomaticEvent(input: DiplomaticEventInput): Promis
         .single();
 
       if (error) {
-        console.warn('[Mosaico] Falha ao persistir compromisso diplomático no Supabase, mantido localmente:', error.message);
+        console.warn('[Mosaico Angola] Falha ao persistir compromisso diplomático no Supabase, mantido localmente:', error.message);
       } else if (data) {
         return rowToDiplomaticEvent(data);
       }
     } catch (err) {
-      console.warn('[Mosaico] Exceção de rede ao persistir compromisso diplomático no Supabase, mantido localmente:', err);
+      console.warn('[Mosaico Angola] Exceção de rede ao persistir compromisso diplomático no Supabase, mantido localmente:', err);
     }
   }
 
@@ -242,12 +242,12 @@ export async function updateDiplomaticEvent(
         .single();
 
       if (error) {
-        console.warn('[Mosaico] Falha ao atualizar compromisso diplomático no Supabase, mantido localmente:', error.message);
+        console.warn('[Mosaico Angola] Falha ao atualizar compromisso diplomático no Supabase, mantido localmente:', error.message);
       } else if (data) {
         return rowToDiplomaticEvent(data);
       }
     } catch (err) {
-      console.warn('[Mosaico] Exceção de rede ao atualizar compromisso diplomático no Supabase, mantido localmente:', err);
+      console.warn('[Mosaico Angola] Exceção de rede ao atualizar compromisso diplomático no Supabase, mantido localmente:', err);
     }
   }
 
@@ -284,10 +284,10 @@ export async function deleteDiplomaticEvent(id: string): Promise<void> {
         .eq('id', id);
 
       if (error) {
-        console.warn('[Mosaico] Falha ao apagar compromisso diplomático no Supabase:', error.message);
+        console.warn('[Mosaico Angola] Falha ao apagar compromisso diplomático no Supabase:', error.message);
       }
     } catch (err) {
-      console.warn('[Mosaico] Exceção de rede ao apagar compromisso diplomático no Supabase:', err);
+      console.warn('[Mosaico Angola] Exceção de rede ao apagar compromisso diplomático no Supabase:', err);
     }
   }
 }

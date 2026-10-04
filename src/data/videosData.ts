@@ -69,7 +69,7 @@ export const initialVideoItems: VideoItem[] = [
   },
   {
     id: 'vid-5',
-    title: 'Selo Oficial Mosaico: Identidade e Difusão',
+    title: 'Selo Oficial Mosaico Angola: Identidade e Difusão',
     category: 'Institucional',
     duration: '03:15',
     date: '2026',
@@ -102,7 +102,7 @@ export const initialVideoItems: VideoItem[] = [
   },
   {
     id: 'vid-8',
-    title: 'Documentário: A Trajetória da Revista Mosaico',
+    title: 'Documentário: A Trajetória da Revista Mosaico Angola',
     category: 'Institucional',
     duration: '12:00',
     date: '2026',

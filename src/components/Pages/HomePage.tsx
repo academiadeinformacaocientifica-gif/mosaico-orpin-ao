@@ -165,12 +165,12 @@ export const HomePage: React.FC<HomePageProps> = ({
       {/* SHOWCASE BANNER: AS 7 MARAVILHAS NATURAIS & TURISMO DE ANGOLA COM SLIDES / TRANSIÇÃO */}
       <WondersBanner wonders={wonders} onNavigate={onNavigate} />
 
-      {/* SECTION: REVISTA MOSAICO - EDIÇÕES DIGITAIS */}
+      {/* SECTION: REVISTA MOSAICO ANGOLA - EDIÇÕES DIGITAIS */}
       <section className="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200/80 shadow-xs">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-[#111]">
-              Edições da Revista Mosaico
+              Edições da Revista Mosaico Angola
             </h2>
             <p className="text-xs text-[#666] mt-0.5">
               Consulte e descarregue as publicações trimestrais da Chancelaria

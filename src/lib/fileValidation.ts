@@ -1,5 +1,5 @@
 /**
- * Utilitário de validação de ficheiros para uploads no portal Mosaico.
+ * Utilitário de validação de ficheiros para uploads no portal Mosaico Angola.
  * Garante segurança, integridade de tipos MIME e controlo de peso máximo.
  */
 

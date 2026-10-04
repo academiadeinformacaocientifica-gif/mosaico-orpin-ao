@@ -70,11 +70,11 @@ export const WondersPage: React.FC<WondersPageProps> = ({
     const wondersNames = activeWonders.map((w) => w.name).join(', ');
     const shareText = wondersNames
       ? `Descubra as Maravilhas Naturais de Angola: ${wondersNames}.`
-      : 'Descubra as Maravilhas Naturais e o Turismo de Angola na Revista Mosaico.';
+      : 'Descubra as Maravilhas Naturais e o Turismo de Angola na Revista Mosaico Angola.';
 
     if (navigator.share) {
       navigator.share({
-        title: 'As 7 Maravilhas Naturais de Angola | Revista Mosaico',
+        title: 'As 7 Maravilhas Naturais de Angola | Revista Mosaico Angola',
         text: shareText,
         url: window.location.href,
       }).catch(() => {});
@@ -475,7 +475,7 @@ export const WondersPage: React.FC<WondersPageProps> = ({
                 Artigos e Reportagens de Turismo
               </h3>
               <p className="text-xs text-stone-500">
-                Publicações da Revista Mosaico sobre cultura, património e turismo em Angola
+                Publicações da Revista Mosaico Angola sobre cultura, património e turismo em Angola
               </p>
             </div>
             <button

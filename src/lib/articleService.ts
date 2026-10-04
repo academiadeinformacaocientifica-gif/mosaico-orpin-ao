@@ -137,7 +137,7 @@ export async function fetchArticles(): Promise<Article[]> {
         .order('iso_date', { ascending: false });
 
       if (error) {
-        console.warn('[Mosaico Angolano] Erro ao obter artigos do Supabase:', error.message || error);
+        console.warn('[Mosaico Angola] Erro ao obter artigos do Supabase:', error.message || error);
         return getLocalArticles();
       }
       if (data && Array.isArray(data) && data.length > 0) {
@@ -146,7 +146,7 @@ export async function fetchArticles(): Promise<Article[]> {
         return fromDb;
       }
     } catch (err) {
-      console.warn('[Mosaico Angolano] Falha de ligação ao Supabase:', err);
+      console.warn('[Mosaico Angola] Falha de ligação ao Supabase:', err);
     }
   }
   return getLocalArticles();

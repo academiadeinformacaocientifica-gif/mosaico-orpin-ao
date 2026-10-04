@@ -30,7 +30,7 @@ export const BlogPage: React.FC<BlogPageProps> = ({
             <span>Blog & Colunas de Opinião</span>
           </h1>
           <p className="text-xs sm:text-sm text-[#666]">
-            Ensaios, reflexões diplomáticas e artigos de opinião dos colaboradores da Revista Mosaico.
+            Ensaios, reflexões diplomáticas e artigos de opinião dos colaboradores da Revista Mosaico Angola.
           </p>
         </div>
         <div className="category-badge-count bg-[#f0f0f0] px-4 py-2 rounded-full font-semibold text-xs text-[#444] flex items-center gap-2 shrink-0">

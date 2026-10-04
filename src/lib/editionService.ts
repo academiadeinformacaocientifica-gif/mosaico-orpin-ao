@@ -165,9 +165,9 @@ export async function fetchMagazineEditions(): Promise<MagazineEdition[]> {
         error.code === 'PGRST205' ||
         error.message?.includes('relation "public.magazine_editions" does not exist')
       ) {
-        console.warn('[Mosaico] Tabela "magazine_editions" não existe ainda no Supabase. Usando armazenamento local.');
+        console.warn('[Mosaico Angola] Tabela "magazine_editions" não existe ainda no Supabase. Usando armazenamento local.');
       } else {
-        console.warn('[Mosaico] Aviso ao consultar edições no Supabase (usando dados locais):', error.message || error);
+        console.warn('[Mosaico Angola] Aviso ao consultar edições no Supabase (usando dados locais):', error.message || error);
       }
       return getLocalEditions();
     }
@@ -182,7 +182,7 @@ export async function fetchMagazineEditions(): Promise<MagazineEdition[]> {
         (async () => {
           try {
             await supabase.from('magazine_editions').upsert(rows, { onConflict: 'id' });
-            console.log('[Mosaico] Edições da revista sincronizadas com sucesso no Supabase.');
+            console.log('[Mosaico Angola] Edições da revista sincronizadas com sucesso no Supabase.');
           } catch (err) {
             console.warn('Erro ao semear edições de revista:', err);
           }
@@ -361,7 +361,7 @@ export async function deleteMagazineEdition(id: string, editionNumber?: number):
         .eq('id', id);
 
       if (idError) {
-        console.warn('[Mosaico] Aviso ao eliminar edição por ID no Supabase:', idError.message || idError);
+        console.warn('[Mosaico Angola] Aviso ao eliminar edição por ID no Supabase:', idError.message || idError);
       }
 
       // Tentativa complementar pelo número da edição se fornecido
@@ -372,7 +372,7 @@ export async function deleteMagazineEdition(id: string, editionNumber?: number):
           .eq('edition_number', editionNumber);
 
         if (numError && !idError) {
-          console.warn('[Mosaico] Aviso ao eliminar por edition_number no Supabase:', numError.message || numError);
+          console.warn('[Mosaico Angola] Aviso ao eliminar por edition_number no Supabase:', numError.message || numError);
         }
       }
     } catch (e) {

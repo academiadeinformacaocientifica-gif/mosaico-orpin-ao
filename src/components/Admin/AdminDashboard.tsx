@@ -721,7 +721,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <div className="max-w-[1180px] mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-[#d9251d] text-white font-bold text-base px-3.5 py-1.5 rounded-tl-xl rounded-br-xl uppercase tracking-wider">
-              MOSAICO
+              MOSAICO ANGOLA
             </div>
             <div>
               <p className="text-sm font-bold text-[#111] leading-tight">
@@ -1414,7 +1414,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <p className="text-xs text-gray-500 mb-4 max-w-md mx-auto">
                   {searchQuery || statusFilter !== 'todos'
                     ? 'Tente ajustar o termo de pesquisa ou os filtros de estado.'
-                    : 'Publique ensaios, reflexões diplomáticas e artigos de opinião dos colaboradores da Revista Mosaico.'}
+                    : 'Publique ensaios, reflexões diplomáticas e artigos de opinião dos colaboradores da Revista Mosaico Angola.'}
                 </p>
                 <button
                   onClick={() => {
@@ -1550,7 +1550,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
 
-        {/* TAB 2: EDIÇÕES DA REVISTA MOSAICO */}
+        {/* TAB 2: EDIÇÕES DA REVISTA MOSAICO ANGOLA */}
         {activeTab === 'edicoes' && (
           <div>
             {filteredMagazineEditions.length === 0 ? (
@@ -1564,7 +1564,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <p className="text-xs text-gray-500 mb-4">
                   {searchQuery || statusFilter !== 'todos'
                     ? 'Tente ajustar o termo de pesquisa ou o filtro de estado.'
-                    : 'Adicione edições trimestrais da Revista Mosaico com capa, sumário e destaques.'}
+                    : 'Adicione edições trimestrais da Revista Mosaico Angola com capa, sumário e destaques.'}
                 </p>
                 <button
                   onClick={() => {

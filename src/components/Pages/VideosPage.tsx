@@ -219,7 +219,7 @@ export const VideosPage: React.FC<VideosPageProps> = ({ items = initialVideoItem
                       <div className="flex justify-between items-center">
                         <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 animate-pulse">
                           <span className="w-2 h-2 rounded-full bg-white"></span>
-                          Transmissão Oficial Mosaico TV
+                          Transmissão Oficial Mosaico Angola TV
                         </span>
                         <span className="text-xs text-white/80 bg-black/50 px-3 py-1 rounded">
                           {activeVideo.views}
@@ -289,7 +289,7 @@ export const VideosPage: React.FC<VideosPageProps> = ({ items = initialVideoItem
               </p>
 
               <div className="pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-                <span>Publicado em {activeVideo.date} • Canal Oficial Mosaico</span>
+                <span>Publicado em {activeVideo.date} • Canal Oficial Mosaico Angola</span>
                 <span className="font-bold text-[#d9251d] flex items-center gap-1">
                   <Check className="w-4 h-4 text-emerald-600" />
                   <span>Conteúdo Oficial Verificado</span>

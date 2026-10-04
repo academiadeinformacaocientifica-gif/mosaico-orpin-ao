@@ -82,7 +82,7 @@ export const isSupabaseConfigured = Boolean(resolvedUrl && resolvedKey);
 
 if (!isSupabaseConfigured) {
   console.info(
-    '[Mosaico Angolano] A utilizar o modo de demonstração local com dados editoriais enriquecidos.'
+    '[Mosaico Angola] A utilizar o modo de demonstração local com dados editoriais enriquecidos.'
   );
 }
 

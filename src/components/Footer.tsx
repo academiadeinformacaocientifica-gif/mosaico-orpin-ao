@@ -36,7 +36,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onShowToast }) => {
       return;
     }
     setSubscribed(true);
-    onShowToast('Subscrição efectuada com sucesso no Boletim Mosaico Angolano!');
+    onShowToast('Subscrição efectuada com sucesso no Boletim Mosaico Angola!');
     setEmail('');
   };
 
@@ -236,7 +236,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onShowToast }) => {
 
         {/* COPYRIGHT BOTTOM SECTION INSIDE THE UNIFIED RED FOOTER */}
         <div className="pt-6 border-t border-white/20 text-center text-xs text-white/90">
-          <p>© {new Date().getFullYear()} Mosaico — Embaixada da República de Angola no Reino de Espanha e Principado de Andorra. Todos os direitos reservados.</p>
+          <p>© {new Date().getFullYear()} Mosaico Angola — Embaixada da República de Angola no Reino de Espanha e Principado de Andorra. Todos os direitos reservados.</p>
         </div>
       </div>
     </footer>
