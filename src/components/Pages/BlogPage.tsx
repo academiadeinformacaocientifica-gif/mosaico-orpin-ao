@@ -39,20 +39,32 @@ export const BlogPage: React.FC<BlogPageProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {articles.map((art) => (
-          <ArticleCard
-            key={art.id}
-            article={art}
-            onOpenArticle={onOpenArticle}
-            onToggleBookmark={onToggleBookmark}
-            onToggleLike={onToggleLike}
-            isBookmarked={bookmarkedIds.has(art.id)}
-            isLiked={likedIds.has(art.id)}
-            showDate={true}
-          />
-        ))}
-      </div>
+      {articles.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-stone-200/80 p-12 text-center shadow-xs">
+          <Feather className="w-12 h-12 text-stone-300 mx-auto mb-3" />
+          <h2 className="text-base font-bold text-stone-800 mb-1">
+            Nenhuma matéria no blog publicada de momento
+          </h2>
+          <p className="text-xs text-stone-500 max-w-md mx-auto">
+            Novos ensaios, colunas e reflexões de opinião serão disponibilizados em breve pelos nossos autores e colunistas.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {articles.map((art) => (
+            <ArticleCard
+              key={art.id}
+              article={art}
+              onOpenArticle={onOpenArticle}
+              onToggleBookmark={onToggleBookmark}
+              onToggleLike={onToggleLike}
+              isBookmarked={bookmarkedIds.has(art.id)}
+              isLiked={likedIds.has(art.id)}
+              showDate={true}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

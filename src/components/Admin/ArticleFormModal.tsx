@@ -4,7 +4,7 @@
  */
 
 import React, { useRef, useState } from 'react';
-import { X, Upload, Loader2, Save, Newspaper } from 'lucide-react';
+import { X, Upload, Loader2, Save, Newspaper, Feather } from 'lucide-react';
 import { Article, CategoryId } from '../../types';
 import { ArticleInput, slugify, uploadArticleImage } from '../../lib/articleService';
 
@@ -18,11 +18,12 @@ const CATEGORY_OPTIONS: { id: CategoryId; label: string }[] = [
   { id: 'kultura-360', label: 'Kultura 360' },
   { id: 'turismo', label: 'Turismo' },
   { id: 'historia', label: 'História' },
-  { id: 'blog', label: 'Blog' },
+  { id: 'blog', label: 'Blog & Opinião' },
 ];
 
 interface ArticleFormModalProps {
   initialArticle: Article | null; // null = criar novo
+  defaultCategoryId?: CategoryId;
   onClose: () => void;
   onSave: (id: string | null, input: ArticleInput, isPublished: boolean) => Promise<void>;
 }
@@ -43,10 +44,13 @@ function formatDateLabel(iso: string): string {
 
 export const ArticleFormModal: React.FC<ArticleFormModalProps> = ({
   initialArticle,
+  defaultCategoryId = 'politica',
   onClose,
   onSave,
 }) => {
   const isEditing = Boolean(initialArticle);
+  const isBlogContext = initialArticle?.categoryId === 'blog' || (!initialArticle && defaultCategoryId === 'blog');
+
   const [title, setTitle] = useState(initialArticle?.title || '');
   const [subtitle, setSubtitle] = useState(initialArticle?.subtitle || '');
   const [description, setDescription] = useState(initialArticle?.description || '');
@@ -54,13 +58,13 @@ export const ArticleFormModal: React.FC<ArticleFormModalProps> = ({
     (initialArticle?.fullContent || []).join('\n\n')
   );
   const [categoryId, setCategoryId] = useState<CategoryId>(
-    initialArticle?.categoryId || 'politica'
+    initialArticle?.categoryId || defaultCategoryId || 'politica'
   );
   const [authorName, setAuthorName] = useState(
-    initialArticle?.author.name || 'Serviços de Comunicação e Imprensa'
+    initialArticle?.author?.name || (isBlogContext ? '' : 'Serviços de Comunicação e Imprensa')
   );
   const [authorRole, setAuthorRole] = useState(
-    initialArticle?.author.role || 'Embaixada de Angola em Espanha'
+    initialArticle?.author?.role || (isBlogContext ? 'Colunista / Autor de Opinião' : 'Embaixada de Angola em Espanha')
   );
   const [isoDate, setIsoDate] = useState(initialArticle?.isoDate || todayIso());
   const [readTime, setReadTime] = useState(initialArticle?.readTime || '3 min de leitura');
@@ -153,8 +157,17 @@ export const ArticleFormModal: React.FC<ArticleFormModalProps> = ({
     <div className="fixed inset-0 z-[70] bg-black/50 flex items-start sm:items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl w-full max-w-2xl my-8 shadow-2xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#eee] sticky top-0 bg-white rounded-t-2xl">
-          <h2 className="text-base font-bold text-[#111]">
-            {isEditing ? 'Editar Notícia' : 'Nova Notícia'}
+          <h2 className="text-base font-bold text-[#111] flex items-center gap-2">
+            {isBlogContext ? (
+              <Feather className="w-5 h-5 text-orange-600" />
+            ) : (
+              <Newspaper className="w-5 h-5 text-[#d9251d]" />
+            )}
+            <span>
+              {isEditing
+                ? (isBlogContext ? 'Editar Matéria no Blog' : 'Editar Notícia')
+                : (isBlogContext ? 'Nova Matéria no Blog & Opinião' : 'Nova Notícia')}
+            </span>
           </h2>
           <button
             type="button"
@@ -243,6 +256,7 @@ export const ArticleFormModal: React.FC<ArticleFormModalProps> = ({
               <input
                 value={authorName}
                 onChange={(e) => setAuthorName(e.target.value)}
+                placeholder={isBlogContext ? 'Nome do colunista / autor' : 'Serviços de Comunicação e Imprensa'}
                 className="w-full px-3 py-2 rounded-lg border border-[#ccc] outline-none text-sm focus:border-[#d9251d]"
               />
             </div>
@@ -251,6 +265,7 @@ export const ArticleFormModal: React.FC<ArticleFormModalProps> = ({
               <input
                 value={authorRole}
                 onChange={(e) => setAuthorRole(e.target.value)}
+                placeholder={isBlogContext ? 'ex.: Diplomata, Investigador, Colunista...' : 'Embaixada de Angola em Espanha'}
                 className="w-full px-3 py-2 rounded-lg border border-[#ccc] outline-none text-sm focus:border-[#d9251d]"
               />
             </div>

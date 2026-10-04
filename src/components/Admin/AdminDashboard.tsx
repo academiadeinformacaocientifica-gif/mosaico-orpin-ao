@@ -32,9 +32,11 @@ import {
   AlertTriangle,
   CalendarDays,
   Landmark,
+  Feather,
 } from 'lucide-react';
 import {
   Article,
+  CategoryId,
   GalleryItem,
   VideoItem,
   MagazineEdition,
@@ -89,6 +91,7 @@ import { AdminDiplomaticAgendaSection } from './sections/AdminDiplomaticAgendaSe
 
 type AdminTab =
   | 'noticias'
+  | 'blog'
   | 'documentos'
   | 'maravilhas'
   | 'edicoes'
@@ -157,6 +160,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Article State
   const [articleFormOpen, setArticleFormOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
+  const [articleDefaultCategory, setArticleDefaultCategory] = useState<CategoryId>('politica');
 
   // Gallery State
   const [galleryFormOpen, setGalleryFormOpen] = useState(false);
@@ -185,9 +189,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  // Sorted & Filtered Articles
+  // Sorted & Filtered Articles (News)
   const filteredArticles = useMemo(() => {
     return [...articles]
+      .filter((art) => art.categoryId !== 'blog')
       .sort((a, b) => {
         const da = a.isoDate ? new Date(a.isoDate).getTime() : 0;
         const db = b.isoDate ? new Date(b.isoDate).getTime() : 0;
@@ -202,6 +207,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           art.title.toLowerCase().includes(q) ||
           art.category.toLowerCase().includes(q) ||
           art.description.toLowerCase().includes(q)
+        );
+      });
+  }, [articles, searchQuery, statusFilter]);
+
+  // Sorted & Filtered Blog Articles
+  const filteredBlogArticles = useMemo(() => {
+    return [...articles]
+      .filter((art) => art.categoryId === 'blog' || art.category.toLowerCase().includes('opinião') || art.category.toLowerCase().includes('blog'))
+      .sort((a, b) => {
+        const da = a.isoDate ? new Date(a.isoDate).getTime() : 0;
+        const db = b.isoDate ? new Date(b.isoDate).getTime() : 0;
+        return db - da;
+      })
+      .filter((art) => {
+        if (statusFilter === 'publicados' && art.isPublished === false) return false;
+        if (statusFilter === 'rascunhos' && art.isPublished !== false) return false;
+        if (!searchQuery.trim()) return true;
+        const q = searchQuery.toLowerCase();
+        return (
+          art.title.toLowerCase().includes(q) ||
+          art.category.toLowerCase().includes(q) ||
+          art.description.toLowerCase().includes(q) ||
+          (art.author?.name && art.author.name.toLowerCase().includes(q))
         );
       });
   }, [articles, searchQuery, statusFilter]);
@@ -276,9 +304,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Stats Counters
   const articleStats = useMemo(() => {
-    const published = articles.filter((a) => a.isPublished !== false).length;
-    const drafts = articles.length - published;
-    return { total: articles.length, published, drafts };
+    const list = articles.filter((a) => a.categoryId !== 'blog');
+    const published = list.filter((a) => a.isPublished !== false).length;
+    const drafts = list.length - published;
+    return { total: list.length, published, drafts };
+  }, [articles]);
+
+  const blogStats = useMemo(() => {
+    const list = articles.filter((a) => a.categoryId === 'blog' || a.category.toLowerCase().includes('opinião') || a.category.toLowerCase().includes('blog'));
+    const published = list.filter((a) => a.isPublished !== false).length;
+    const drafts = list.length - published;
+    return { total: list.length, published, drafts };
   }, [articles]);
 
   const galleryStats = useMemo(() => {
@@ -788,6 +824,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <button
                   onClick={() => {
                     setEditingArticle(null);
+                    setArticleDefaultCategory('politica');
                     setArticleFormOpen(true);
                   }}
                   className="w-full flex items-center gap-2.5 bg-[#d9251d] hover:bg-[#b91e17] text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98 text-left justify-start"
@@ -795,6 +832,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 >
                   <Plus className="w-4 h-4 shrink-0" />
                   <span className="truncate">Nova Notícia</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('blog');
+                    setEditingArticle(null);
+                    setArticleDefaultCategory('blog');
+                    setArticleFormOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 bg-orange-600 hover:bg-orange-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98 text-left justify-start"
+                  title="Adicionar nova matéria no blog ou coluna de opinião"
+                >
+                  <Plus className="w-4 h-4 shrink-0" />
+                  <Feather className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Nova Matéria no Blog</span>
                 </button>
 
                 <button
@@ -915,6 +967,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               }`}
             >
               {articleStats.total}
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('blog');
+              setSearchQuery('');
+            }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeTab === 'blog'
+                ? 'bg-orange-600 text-white shadow-xs'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <Feather className="w-4 h-4" />
+            <span>Blog & Opinião</span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'blog' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              {blogStats.total}
             </span>
           </button>
 
@@ -1084,6 +1158,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               placeholder={`Pesquisar em ${
                 activeTab === 'noticias'
                   ? 'notícias'
+                  : activeTab === 'blog'
+                  ? 'matérias do blog'
                   : activeTab === 'edicoes'
                   ? 'edições da revista'
                   : activeTab === 'galeria'
@@ -1124,6 +1200,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               Publicados (
               {activeTab === 'noticias'
                 ? articleStats.published
+                : activeTab === 'blog'
+                ? blogStats.published
                 : activeTab === 'edicoes'
                 ? magazineStats.published
                 : activeTab === 'galeria'
@@ -1149,6 +1227,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               Rascunhos (
               {activeTab === 'noticias'
                 ? articleStats.drafts
+                : activeTab === 'blog'
+                ? blogStats.drafts
                 : activeTab === 'galeria'
                 ? galleryStats.drafts
                 : activeTab === 'videos'
@@ -1192,6 +1272,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <button
                   onClick={() => {
                     setEditingArticle(null);
+                    setArticleDefaultCategory('politica');
                     setArticleFormOpen(true);
                   }}
                   className="inline-flex items-center gap-1.5 bg-[#d9251d] hover:bg-[#b91e17] text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer"
@@ -1272,6 +1353,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <button
                         onClick={() => {
                           setEditingArticle(article);
+                          setArticleDefaultCategory(article.categoryId || 'politica');
                           setArticleFormOpen(true);
                         }}
                         className="p-2 rounded-lg text-[#444] hover:text-[#d9251d] hover:bg-red-50 transition-colors cursor-pointer"
@@ -1301,6 +1383,160 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           onClick={() => setConfirmDeleteId(article.id)}
                           className="p-2 rounded-lg text-[#444] hover:text-[#d9251d] hover:bg-red-50 transition-colors cursor-pointer"
                           title="Eliminar notícia"
+                          aria-label="Remover"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB: BLOG & OPINIÃO */}
+        {activeTab === 'blog' && (
+          <div>
+            {loading ? (
+              <div className="flex items-center justify-center py-24">
+                <Loader2 className="w-6 h-6 text-orange-600 animate-spin" />
+              </div>
+            ) : filteredBlogArticles.length === 0 ? (
+              <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-xs">
+                <Feather className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                <h3 className="text-sm font-bold text-gray-800 mb-1">
+                  {searchQuery || statusFilter !== 'todos'
+                    ? 'Nenhuma matéria no blog encontrada com os filtros aplicados'
+                    : 'Ainda não há matérias no blog'}
+                </h3>
+                <p className="text-xs text-gray-500 mb-4 max-w-md mx-auto">
+                  {searchQuery || statusFilter !== 'todos'
+                    ? 'Tente ajustar o termo de pesquisa ou os filtros de estado.'
+                    : 'Publique ensaios, reflexões diplomáticas e artigos de opinião dos colaboradores da Revista Mosaico.'}
+                </p>
+                <button
+                  onClick={() => {
+                    setEditingArticle(null);
+                    setArticleDefaultCategory('blog');
+                    setArticleFormOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Nova Matéria no Blog
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+                {filteredBlogArticles.map((article) => (
+                  <div
+                    key={article.id}
+                    className="flex items-center gap-4 px-5 py-4 border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafafa] transition-colors"
+                  >
+                    <img
+                      src={article.imageUrl}
+                      alt=""
+                      className="w-16 h-16 object-cover rounded-lg shrink-0 bg-gray-100"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                        <span className="text-[10px] font-bold text-orange-600 uppercase tracking-wide bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200/60">
+                          {article.category || 'Blog & Opinião'}
+                        </span>
+                        {article.author?.name && (
+                          <span className="text-[10px] text-gray-600 font-medium bg-gray-100 px-2 py-0.5 rounded-md truncate max-w-[200px]">
+                            Por: {article.author.name}
+                          </span>
+                        )}
+                        {article.isPublished !== false ? (
+                          <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                            Publicado
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                            Rascunho
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleArticleFeatured(article)}
+                          className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors cursor-pointer ${
+                            article.isFeatured || article.isCarousel
+                              ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300/60'
+                              : 'bg-gray-100 text-gray-400 hover:bg-gray-200 border border-transparent'
+                          }`}
+                          title={
+                            article.isFeatured || article.isCarousel
+                              ? 'Artigo em Destaque nos Slides. Clique para remover do carrossel.'
+                              : 'Artigo não destacado. Clique para colocar nos slides do carrossel.'
+                          }
+                        >
+                          <Star
+                            className={`w-3 h-3 ${
+                              article.isFeatured || article.isCarousel
+                                ? 'fill-amber-500 text-amber-500'
+                                : 'text-gray-400'
+                            }`}
+                          />
+                          <span>
+                            {article.isFeatured || article.isCarousel
+                              ? 'Destaque (Slides)'
+                              : 'Sem Destaque'}
+                          </span>
+                        </button>
+                      </div>
+                      <h3 className="text-sm font-semibold text-[#111] truncate">{article.title}</h3>
+                      <p className="text-[11px] text-gray-500">
+                        {article.date} {article.author?.role ? `• ${article.author.role}` : ''}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleToggleArticlePublish(article)}
+                        className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                          article.isPublished !== false
+                            ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        }`}
+                      >
+                        {article.isPublished !== false ? 'Despublicar' : 'Publicar'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingArticle(article);
+                          setArticleDefaultCategory('blog');
+                          setArticleFormOpen(true);
+                        }}
+                        className="p-2 rounded-lg text-[#444] hover:text-orange-600 hover:bg-orange-50 transition-colors cursor-pointer"
+                        title="Editar matéria"
+                        aria-label="Editar"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      {confirmDeleteId === article.id ? (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleDeleteArticle(article.id)}
+                            disabled={deletingId === article.id}
+                            className="text-[11px] font-bold text-white bg-[#d9251d] px-2.5 py-1.5 rounded-lg cursor-pointer"
+                          >
+                            {deletingId === article.id ? '...' : 'Confirmar'}
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="text-[11px] font-semibold text-[#666] px-2 py-1.5 cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteId(article.id)}
+                          className="p-2 rounded-lg text-[#444] hover:text-[#d9251d] hover:bg-red-50 transition-colors cursor-pointer"
+                          title="Eliminar matéria"
                           aria-label="Remover"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -2065,6 +2301,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {articleFormOpen && (
         <ArticleFormModal
           initialArticle={editingArticle}
+          defaultCategoryId={articleDefaultCategory}
           onClose={() => {
             setArticleFormOpen(false);
             setEditingArticle(null);
