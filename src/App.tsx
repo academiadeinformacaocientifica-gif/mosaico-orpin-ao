@@ -63,8 +63,10 @@ import { fetchNaturalWonders, getLocalWonders } from './lib/wonderService';
 import { fetchConsularDocuments, getLocalConsularDocuments } from './lib/consularDocService';
 import { fetchCulturalEvents, getLocalCulturalEvents } from './lib/culturalAgendaService';
 import { fetchDiplomaticEvents, getLocalDiplomaticEvents } from './lib/diplomaticAgendaService';
+import { fetchEmbassyInfo, getLocalEmbassyInfo } from './lib/embassyService';
 import { isSupabaseConfigured } from './lib/supabase';
 import { Search, X, FolderSearch } from 'lucide-react';
+import { EmbassyInfo } from './types';
 
 export default function App() {
   const navigate = useNavigate();
@@ -142,6 +144,16 @@ export default function App() {
       }
     }
     return [];
+  });
+  const [embassyInfo, setEmbassyInfo] = useState<EmbassyInfo>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return getLocalEmbassyInfo();
+      } catch {
+        // fallback
+      }
+    }
+    return getLocalEmbassyInfo();
   });
 
   const [articlesLoading, setArticlesLoading] = useState(false);
@@ -225,6 +237,15 @@ export default function App() {
     }
   }, []);
 
+  const loadEmbassyInfoFromBackend = useCallback(async () => {
+    try {
+      const remote = await fetchEmbassyInfo();
+      if (remote) setEmbassyInfo(remote);
+    } catch {
+      // fallback
+    }
+  }, []);
+
   useEffect(() => {
     loadArticlesFromBackend();
     loadGalleryFromBackend();
@@ -234,6 +255,7 @@ export default function App() {
     loadConsularDocsFromBackend();
     loadCulturalEventsFromBackend();
     loadDiplomaticEventsFromBackend();
+    loadEmbassyInfoFromBackend();
   }, [
     loadArticlesFromBackend,
     loadGalleryFromBackend,
@@ -243,6 +265,7 @@ export default function App() {
     loadConsularDocsFromBackend,
     loadCulturalEventsFromBackend,
     loadDiplomaticEventsFromBackend,
+    loadEmbassyInfoFromBackend,
   ]);
 
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(() => {
@@ -567,6 +590,7 @@ export default function App() {
     publicConsularDocuments,
     culturalEventsList,
     diplomaticEventsList,
+    embassyInfo,
     categoryConfigs,
     bookmarkedIds,
     likedIds,
@@ -596,6 +620,7 @@ export default function App() {
             consularDocs={consularDocumentsList}
             culturalEvents={culturalEventsList}
             diplomaticEvents={diplomaticEventsList}
+            embassyInfo={embassyInfo}
             articlesLoading={articlesLoading}
             articlesError={articlesError}
             onArticlesChanged={loadArticlesFromBackend}
@@ -606,6 +631,7 @@ export default function App() {
             onConsularDocsChanged={loadConsularDocsFromBackend}
             onCulturalEventsChanged={loadCulturalEventsFromBackend}
             onDiplomaticEventsChanged={loadDiplomaticEventsFromBackend}
+            onEmbassyInfoChanged={setEmbassyInfo}
             onGoToSite={() => handleNavigate('home')}
             onShowToast={showToast}
           />
@@ -656,6 +682,7 @@ interface PageOutletContext {
   publicConsularDocuments: ConsularDocument[];
   culturalEventsList: CulturalEvent[];
   diplomaticEventsList: DiplomaticEvent[];
+  embassyInfo: EmbassyInfo;
   categoryConfigs: Partial<Record<CategoryId, { title: string; subtitle: string }>>;
   bookmarkedIds: Set<string>;
   likedIds: Set<string>;
@@ -744,7 +771,7 @@ function SiteLayout({
         )}
       </main>
 
-      <Footer onNavigate={onNavigate} onShowToast={onShowToast} />
+      <Footer onNavigate={onNavigate} onShowToast={onShowToast} embassyInfo={context.embassyInfo} />
 
       {selectedEdition && (
         <MagazineReaderModal
@@ -886,6 +913,7 @@ function PageSwitch() {
     publicConsularDocuments,
     culturalEventsList,
     diplomaticEventsList,
+    embassyInfo,
     categoryConfigs,
     bookmarkedIds,
     likedIds,
@@ -922,7 +950,7 @@ function PageSwitch() {
       )}
 
       {/* SOBRE A EMBAIXADA */}
-      {currentPage === 'sobre' && <AboutPage onShowToast={showToast} />}
+      {currentPage === 'sobre' && <AboutPage onShowToast={showToast} embassyInfo={embassyInfo} />}
 
       {/* SERVIÇOS CONSULARES E DOCUMENTAÇÃO */}
       {currentPage === 'panorama-consular' && (

@@ -15,15 +15,18 @@ import {
   Globe, 
   BookOpen 
 } from 'lucide-react';
-import { NavPage } from '../types';
+import { NavPage, EmbassyInfo } from '../types';
+import { DEFAULT_EMBASSY_INFO } from '../data/embassyData';
 import { MosaicoLogo } from './MosaicoLogo';
 
 interface FooterProps {
   onNavigate: (page: NavPage) => void;
   onShowToast: (msg: string) => void;
+  embassyInfo?: EmbassyInfo;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onNavigate, onShowToast }) => {
+export const Footer: React.FC<FooterProps> = ({ onNavigate, onShowToast, embassyInfo }) => {
+  const info = embassyInfo || DEFAULT_EMBASSY_INFO;
   const [email, setEmail] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
@@ -55,28 +58,35 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onShowToast }) => {
             </div>
 
             <p className="text-xs text-white/90 leading-relaxed mb-4">
-              Revista oficial e plataforma de difusão diplomática, consular e cultural da <strong>Embaixada da República de Angola no Reino de Espanha e Principado de Andorra</strong>.
+              Revista oficial e plataforma de difusão diplomática, consular e cultural da <strong>{info.name}</strong>.
             </p>
 
             <div className="flex flex-col gap-2 text-xs text-white/90">
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-white shrink-0 mt-0.5" />
-                <span>Calle de Lagasca, nº 88, 2ª Planta, 28001 Madrid, Espanha</span>
+                <span>
+                  {info.addressStreet}
+                  {info.addressDetails ? `, ${info.addressDetails}` : ''}
+                  {info.postalCode ? `, ${info.postalCode}` : ''} {info.city}, {info.country}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-white shrink-0" />
-                <span>+34 91 435 61 66 / +34 91 435 64 30</span>
+                <span>
+                  {info.phonePrimary}
+                  {info.phoneSecondary ? ` / ${info.phoneSecondary}` : ''}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-white shrink-0" />
-                <span>embaixada.espanha@mirex.gov.ao</span>
+                <span className="break-all">{info.emailGeneral}</span>
               </div>
             </div>
 
             {/* DIRECT GOVERNMENT ACCESS */}
             <div className="mt-4 pt-3 border-t border-white/20">
               <a
-                href="https://www.governo.gov.ao"
+                href={info.institutionalPortal}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-white hover:text-white/80 font-bold inline-flex items-center gap-1.5 transition-colors underline underline-offset-2"

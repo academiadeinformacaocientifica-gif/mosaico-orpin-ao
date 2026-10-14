@@ -191,3 +191,29 @@ export interface HistoricalMilestone {
   significance: string;
   imageUrl?: string;
 }
+
+export interface EmbassyInfo {
+  id: string;
+  name: string;
+  jurisdiction: string;
+  chanceryTitle: string;
+  chancerySubtitle?: string;
+  addressStreet: string;
+  addressDetails?: string;
+  postalCode: string;
+  city: string;
+  country: string;
+  phonePrimary: string;
+  phoneSecondary?: string;
+  fax?: string;
+  emailGeneral: string;
+  emailAmbassador?: string;
+  emailConsular?: string;
+  emailCommercial?: string;
+  officeHours: string;
+  consularHours?: string;
+  website: string;
+  institutionalPortal: string;
+  googleMapsUrl?: string;
+  updatedAt?: string;
+}

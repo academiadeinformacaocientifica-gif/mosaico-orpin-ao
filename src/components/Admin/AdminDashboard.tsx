@@ -33,6 +33,7 @@ import {
   CalendarDays,
   Landmark,
   Feather,
+  Building2,
 } from 'lucide-react';
 import {
   Article,
@@ -43,6 +44,7 @@ import {
   ConsularDocument,
   CulturalEvent,
   DiplomaticEvent,
+  EmbassyInfo,
 } from '../../types';
 import { NaturalWonder } from '../../data/wondersData';
 import { useAuth } from '../../lib/AuthContext';
@@ -88,6 +90,7 @@ import { ConsularDocFormModal } from './ConsularDocFormModal';
 import { DatabaseStatusModal } from './DatabaseStatusModal';
 import { AdminCulturalAgendaSection } from './sections/AdminCulturalAgendaSection';
 import { AdminDiplomaticAgendaSection } from './sections/AdminDiplomaticAgendaSection';
+import { AdminEmbassyInfoSection } from './sections/AdminEmbassyInfoSection';
 
 type AdminTab =
   | 'noticias'
@@ -98,7 +101,8 @@ type AdminTab =
   | 'galeria'
   | 'videos'
   | 'agenda-cultural'
-  | 'agenda-diplomatica';
+  | 'agenda-diplomatica'
+  | 'dados-embaixada';
 type StatusFilter = 'todos' | 'publicados' | 'rascunhos';
 
 interface AdminDashboardProps {
@@ -110,6 +114,7 @@ interface AdminDashboardProps {
   consularDocs: ConsularDocument[];
   culturalEvents: CulturalEvent[];
   diplomaticEvents: DiplomaticEvent[];
+  embassyInfo: EmbassyInfo;
   loading: boolean;
   loadError: string | null;
   onArticlesChanged: () => void;
@@ -120,6 +125,7 @@ interface AdminDashboardProps {
   onConsularDocsChanged: () => void;
   onCulturalEventsChanged: () => void;
   onDiplomaticEventsChanged: () => void;
+  onEmbassyInfoChanged: (updated: EmbassyInfo) => void;
   onGoToSite: () => void;
   onShowToast: (msg: string) => void;
 }
@@ -133,6 +139,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   consularDocs,
   culturalEvents,
   diplomaticEvents,
+  embassyInfo,
   loading,
   loadError,
   onArticlesChanged,
@@ -143,6 +150,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onConsularDocsChanged,
   onCulturalEventsChanged,
   onDiplomaticEventsChanged,
+  onEmbassyInfoChanged,
   onGoToSite,
   onShowToast,
 }) => {
@@ -939,6 +947,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <Landmark className="w-4 h-4 text-amber-400 shrink-0" />
                   <span className="truncate">Novo Compromisso Diplomático</span>
                 </button>
+
+                <div className="pt-2 border-t border-gray-100">
+                  <button
+                    onClick={() => {
+                      setActiveTab('dados-embaixada');
+                      setSearchQuery('');
+                    }}
+                    className={`w-full flex items-center gap-2.5 text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98 text-left justify-start ${
+                      activeTab === 'dados-embaixada'
+                        ? 'bg-[#1e2330] text-amber-400 border border-amber-500/40'
+                        : 'bg-stone-100 hover:bg-stone-200 text-stone-800'
+                    }`}
+                    title="Gerir dados de contacto e chancelaria da Embaixada"
+                  >
+                    <Building2 className="w-4 h-4 shrink-0 text-amber-500" />
+                    <span className="truncate">Dados da Embaixada</span>
+                  </button>
+                </div>
               </div>
             </div>
           </aside>
@@ -1145,103 +1171,120 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               {diplomaticStats.total}
             </span>
           </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('dados-embaixada');
+              setSearchQuery('');
+            }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeTab === 'dados-embaixada'
+                ? 'bg-[#1e2330] text-amber-400 border border-amber-500/40 shadow-xs'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <Building2 className="w-4 h-4" />
+            <span>Dados da Embaixada</span>
+          </button>
         </div>
 
         {/* SEARCH AND STATUS FILTER BAR */}
-        <div className="bg-white p-3.5 rounded-xl border border-gray-200/80 shadow-xs mb-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="relative w-full sm:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={`Pesquisar em ${
-                activeTab === 'noticias'
-                  ? 'notícias'
-                  : activeTab === 'blog'
-                  ? 'matérias do blog'
-                  : activeTab === 'edicoes'
-                  ? 'edições da revista'
-                  : activeTab === 'galeria'
-                  ? 'galeria de imagens'
-                  : activeTab === 'videos'
-                  ? 'vídeos'
-                  : activeTab === 'agenda-cultural'
-                  ? 'eventos culturais'
-                  : activeTab === 'agenda-diplomatica'
-                  ? 'agenda diplomática'
-                  : 'documentos'
-              }...`}
-              className="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white outline-none focus:border-[#d9251d] transition-colors"
-            />
-          </div>
+        {activeTab !== 'dados-embaixada' && (
+          <div className="bg-white p-3.5 rounded-xl border border-gray-200/80 shadow-xs mb-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={`Pesquisar em ${
+                  activeTab === 'noticias'
+                    ? 'notícias'
+                    : activeTab === 'blog'
+                    ? 'matérias do blog'
+                    : activeTab === 'edicoes'
+                    ? 'edições da revista'
+                    : activeTab === 'galeria'
+                    ? 'galeria de imagens'
+                    : activeTab === 'videos'
+                    ? 'vídeos'
+                    : activeTab === 'agenda-cultural'
+                    ? 'eventos culturais'
+                    : activeTab === 'agenda-diplomatica'
+                    ? 'agenda diplomática'
+                    : 'documentos'
+                }...`}
+                className="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white outline-none focus:border-[#d9251d] transition-colors"
+              />
+            </div>
 
-          <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
-            <span className="text-xs text-gray-500 font-medium mr-1 hidden sm:inline">Estado:</span>
-            <button
-              onClick={() => setStatusFilter('todos')}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
-                statusFilter === 'todos'
-                  ? 'bg-gray-800 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              Todos
-            </button>
-            <button
-              onClick={() => setStatusFilter('publicados')}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
-                statusFilter === 'publicados'
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-              }`}
-            >
-              <CheckCircle2 className="w-3 h-3" />
-              Publicados (
-              {activeTab === 'noticias'
-                ? articleStats.published
-                : activeTab === 'blog'
-                ? blogStats.published
-                : activeTab === 'edicoes'
-                ? magazineStats.published
-                : activeTab === 'galeria'
-                ? galleryStats.published
-                : activeTab === 'videos'
-                ? videoStats.published
-                : activeTab === 'agenda-cultural'
-                ? culturalStats.published
-                : activeTab === 'agenda-diplomatica'
-                ? diplomaticStats.published
-                : consularDocStats.published}
-              )
-            </button>
-            <button
-              onClick={() => setStatusFilter('rascunhos')}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
-                statusFilter === 'rascunhos'
-                  ? 'bg-amber-600 text-white'
-                  : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
-              }`}
-            >
-              <Clock className="w-3 h-3" />
-              Rascunhos (
-              {activeTab === 'noticias'
-                ? articleStats.drafts
-                : activeTab === 'blog'
-                ? blogStats.drafts
-                : activeTab === 'galeria'
-                ? galleryStats.drafts
-                : activeTab === 'videos'
-                ? videoStats.drafts
-                : activeTab === 'agenda-cultural'
-                ? culturalStats.drafts
-                : activeTab === 'agenda-diplomatica'
-                ? diplomaticStats.drafts
-                : consularDocStats.drafts}
-              )
-            </button>
+            <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
+              <span className="text-xs text-gray-500 font-medium mr-1 hidden sm:inline">Estado:</span>
+              <button
+                onClick={() => setStatusFilter('todos')}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                  statusFilter === 'todos'
+                    ? 'bg-gray-800 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Todos
+              </button>
+              <button
+                onClick={() => setStatusFilter('publicados')}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
+                  statusFilter === 'publicados'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                }`}
+              >
+                <CheckCircle2 className="w-3 h-3" />
+                Publicados (
+                {activeTab === 'noticias'
+                  ? articleStats.published
+                  : activeTab === 'blog'
+                  ? blogStats.published
+                  : activeTab === 'edicoes'
+                  ? magazineStats.published
+                  : activeTab === 'galeria'
+                  ? galleryStats.published
+                  : activeTab === 'videos'
+                  ? videoStats.published
+                  : activeTab === 'agenda-cultural'
+                  ? culturalStats.published
+                  : activeTab === 'agenda-diplomatica'
+                  ? diplomaticStats.published
+                  : consularDocStats.published}
+                )
+              </button>
+              <button
+                onClick={() => setStatusFilter('rascunhos')}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
+                  statusFilter === 'rascunhos'
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                }`}
+              >
+                <Clock className="w-3 h-3" />
+                Rascunhos (
+                {activeTab === 'noticias'
+                  ? articleStats.drafts
+                  : activeTab === 'blog'
+                  ? blogStats.drafts
+                  : activeTab === 'galeria'
+                  ? galleryStats.drafts
+                  : activeTab === 'videos'
+                  ? videoStats.drafts
+                  : activeTab === 'agenda-cultural'
+                  ? culturalStats.drafts
+                  : activeTab === 'agenda-diplomatica'
+                  ? diplomaticStats.drafts
+                  : consularDocStats.drafts}
+                )
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {loadError && (
           <div className="bg-red-50 border border-red-200 text-[#d9251d] text-sm rounded-xl p-4 mb-6">
@@ -2290,6 +2333,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             statusFilter={statusFilter}
             createTrigger={diplomaticCreateTrigger}
             onEventsChanged={onDiplomaticEventsChanged}
+            onShowToast={onShowToast}
+          />
+        )}
+
+        {/* TAB 9: DADOS DA EMBAIXADA */}
+        {activeTab === 'dados-embaixada' && (
+          <AdminEmbassyInfoSection
+            embassyInfo={embassyInfo}
+            onEmbassyInfoChanged={onEmbassyInfoChanged}
             onShowToast={onShowToast}
           />
         )}

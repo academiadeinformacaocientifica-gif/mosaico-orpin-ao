@@ -225,7 +225,34 @@ create table if not exists public.diplomatic_events (
   updated_at            timestamptz not null default now()
 );
 
--- 10. SEGURANÇA E RLS EM TODAS AS TABELAS ------------------------------------
+-- 10. TABELA DE DADOS DA EMBAIXADA -----------------------------------------
+create table if not exists public.embassy_info (
+  id                    text primary key,
+  name                  text not null,
+  jurisdiction          text not null default 'Reino de Espanha e Principado de Andorra',
+  chancery_title        text not null default 'Chancelaria da Embaixada da República de Angola',
+  chancery_subtitle     text default 'Missão Diplomática e Consular em Madrid',
+  address_street        text not null default 'Calle de Lagasca, nº 88',
+  address_details       text default '2ª Planta',
+  postal_code           text not null default '28001',
+  city                  text not null default 'Madrid',
+  country               text not null default 'Espanha',
+  phone_primary         text not null default '+34 91 435 61 66',
+  phone_secondary       text default '+34 91 435 64 30',
+  fax                   text default '+34 91 577 90 10',
+  email_general         text not null default 'embaixada.espanha@mirex.gov.ao',
+  email_ambassador      text default 'gabembajador@embajadadeangola.com',
+  email_consular        text default 'consulado@embajadadeangola.com',
+  email_commercial      text default 'comercial@embajadadeangola.com',
+  office_hours          text not null default 'Segunda a sexta-feira, das 09:00 às 14:00 (Fuso horário de Madrid)',
+  consular_hours        text default 'Segunda a sexta-feira, das 09:30 às 13:00 (Atendimento ao Público)',
+  website               text not null default 'https://www.mirex.gov.ao',
+  institutional_portal  text not null default 'https://www.governo.gov.ao',
+  google_maps_url       text default 'https://maps.google.com/?q=Calle+de+Lagasca+88+Madrid+Spain',
+  updated_at            timestamptz not null default now()
+);
+
+-- 11. SEGURANÇA E RLS EM TODAS AS TABELAS ------------------------------------
 alter table public.admin_users enable row level security;
 alter table public.articles enable row level security;
 alter table public.consular_documents enable row level security;
@@ -235,6 +262,7 @@ alter table public.magazine_editions enable row level security;
 alter table public.natural_wonders enable row level security;
 alter table public.cultural_events enable row level security;
 alter table public.diplomatic_events enable row level security;
+alter table public.embassy_info enable row level security;
 
 -- Políticas de Acesso
 drop policy if exists "Permitir leitura de perfis de admin" on public.admin_users;
@@ -315,6 +343,15 @@ drop policy if exists "Atualização de agenda diplomática" on public.diplomati
 create policy "Atualização de agenda diplomática" on public.diplomatic_events for update using (true) with check (true);
 drop policy if exists "Remoção de agenda diplomática" on public.diplomatic_events;
 create policy "Remoção de agenda diplomática" on public.diplomatic_events for delete using (true);
+
+drop policy if exists "Leitura pública de dados da embaixada" on public.embassy_info;
+create policy "Leitura pública de dados da embaixada" on public.embassy_info for select using (true);
+drop policy if exists "Inserção de dados da embaixada" on public.embassy_info;
+create policy "Inserção de dados da embaixada" on public.embassy_info for insert with check (true);
+drop policy if exists "Atualização de dados da embaixada" on public.embassy_info;
+create policy "Atualização de dados da embaixada" on public.embassy_info for update using (true) with check (true);
+drop policy if exists "Remoção de dados da embaixada" on public.embassy_info;
+create policy "Remoção de dados da embaixada" on public.embassy_info for delete using (true);
 
 -- 8. BUCKET DE IMAGENS -------------------------------------------------------
 insert into storage.buckets (id, name, public)

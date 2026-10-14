@@ -13,6 +13,7 @@ import {
   ConsularDocument,
   CulturalEvent,
   DiplomaticEvent,
+  EmbassyInfo,
 } from '../../types';
 import { NaturalWonder } from '../../data/wondersData';
 import { useAuth } from '../../lib/AuthContext';
@@ -28,6 +29,7 @@ interface AdminGateProps {
   consularDocs: ConsularDocument[];
   culturalEvents: CulturalEvent[];
   diplomaticEvents: DiplomaticEvent[];
+  embassyInfo: EmbassyInfo;
   articlesLoading: boolean;
   articlesError: string | null;
   onArticlesChanged: () => void;
@@ -38,6 +40,7 @@ interface AdminGateProps {
   onConsularDocsChanged: () => void;
   onCulturalEventsChanged: () => void;
   onDiplomaticEventsChanged: () => void;
+  onEmbassyInfoChanged: (updated: EmbassyInfo) => void;
   onGoToSite: () => void;
   onShowToast: (msg: string) => void;
 }
@@ -51,6 +54,7 @@ export const AdminGate: React.FC<AdminGateProps> = ({
   consularDocs,
   culturalEvents,
   diplomaticEvents,
+  embassyInfo,
   articlesLoading,
   articlesError,
   onArticlesChanged,
@@ -61,6 +65,7 @@ export const AdminGate: React.FC<AdminGateProps> = ({
   onConsularDocsChanged,
   onCulturalEventsChanged,
   onDiplomaticEventsChanged,
+  onEmbassyInfoChanged,
   onGoToSite,
   onShowToast,
 }) => {
@@ -88,6 +93,7 @@ export const AdminGate: React.FC<AdminGateProps> = ({
       consularDocs={consularDocs}
       culturalEvents={culturalEvents}
       diplomaticEvents={diplomaticEvents}
+      embassyInfo={embassyInfo}
       loading={articlesLoading}
       loadError={articlesError}
       onArticlesChanged={onArticlesChanged}
@@ -98,6 +104,7 @@ export const AdminGate: React.FC<AdminGateProps> = ({
       onConsularDocsChanged={onConsularDocsChanged}
       onCulturalEventsChanged={onCulturalEventsChanged}
       onDiplomaticEventsChanged={onDiplomaticEventsChanged}
+      onEmbassyInfoChanged={onEmbassyInfoChanged}
       onGoToSite={onGoToSite}
       onShowToast={onShowToast}
     />

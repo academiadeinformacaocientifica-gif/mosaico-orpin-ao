@@ -13,12 +13,16 @@ import {
   Users, 
   CheckCircle2 
 } from 'lucide-react';
+import { EmbassyInfo } from '../../types';
+import { DEFAULT_EMBASSY_INFO } from '../../data/embassyData';
 
 interface AboutPageProps {
   onShowToast: (msg: string) => void;
+  embassyInfo?: EmbassyInfo;
 }
 
-export const AboutPage: React.FC<AboutPageProps> = ({ onShowToast }) => {
+export const AboutPage: React.FC<AboutPageProps> = ({ onShowToast, embassyInfo }) => {
+  const info = embassyInfo || DEFAULT_EMBASSY_INFO;
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactSubject, setContactSubject] = useState('Geral');
@@ -231,7 +235,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onShowToast }) => {
               <span>Localização e Contactos</span>
             </h2>
             <p className="text-xs text-[#555] leading-relaxed mb-4">
-              A Chancelaria da Embaixada da República de Angola no Reino de Espanha está estrategicamente situada no centro de Madrid, no prestigiado Bairro de Salamanca.
+              A Chancelaria da {info.name} está estrategicamente situada no centro de {info.city}.
             </p>
             
             <ul className="contact-info-list space-y-4 text-xs text-[#444]">
@@ -239,29 +243,62 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onShowToast }) => {
                 <MapPin className="w-4 h-4 text-[#d9251d] shrink-0 mt-0.5" />
                 <div>
                   <strong className="block text-gray-900 mb-0.5 text-xs">Endereço Oficial</strong>
-                  Calle de Lagasca, nº 88, 2ª Planta, 28001 Madrid, Espanha
+                  {info.addressStreet}
+                  {info.addressDetails ? `, ${info.addressDetails}` : ''}
+                  {info.postalCode ? `, ${info.postalCode}` : ''} {info.city}, {info.country}
+                  {info.googleMapsUrl && (
+                    <div className="mt-1">
+                      <a
+                        href={info.googleMapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#d9251d] hover:underline font-semibold inline-flex items-center gap-1 text-[11px]"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        <span>Ver localização no mapa</span>
+                      </a>
+                    </div>
+                  )}
                 </div>
               </li>
               <li className="flex items-start gap-3">
                 <Phone className="w-4 h-4 text-[#d9251d] shrink-0 mt-0.5" />
                 <div>
                   <strong className="block text-gray-900 mb-0.5 text-xs">Telefones Centrais</strong>
-                  +34 91 435 61 66<br />+34 91 435 64 30
+                  {info.phonePrimary}
+                  {info.phoneSecondary ? <><br />{info.phoneSecondary}</> : null}
+                  {info.fax ? <><br /><span className="text-gray-500">Fax: {info.fax}</span></> : null}
                 </div>
               </li>
               <li className="flex items-start gap-3">
                 <Mail className="w-4 h-4 text-[#d9251d] shrink-0 mt-0.5" />
                 <div>
                   <strong className="block text-gray-900 mb-0.5 text-xs">Correio Eletrónico</strong>
-                  <span className="break-all">embaixada.espanha@mirex.gov.ao</span><br />
-                  <span className="break-all text-gray-500">gabembajador@embajadadeangola.com</span>
+                  <span className="break-all">{info.emailGeneral}</span>
+                  {info.emailAmbassador && (
+                    <>
+                      <br />
+                      <span className="break-all text-gray-500">{info.emailAmbassador}</span>
+                    </>
+                  )}
+                  {info.emailConsular && (
+                    <>
+                      <br />
+                      <span className="break-all text-gray-500">Consular: {info.emailConsular}</span>
+                    </>
+                  )}
                 </div>
               </li>
               <li className="flex items-start gap-3">
                 <Clock className="w-4 h-4 text-[#d9251d] shrink-0 mt-0.5" />
                 <div>
                   <strong className="block text-gray-900 mb-0.5 text-xs">Horário de Funcionamento</strong>
-                  Segunda a sexta-feira, das 09:00 às 14:00 (Fuso horário de Madrid)
+                  {info.officeHours}
+                  {info.consularHours && (
+                    <div className="text-gray-500 mt-0.5">
+                      Atendimento consular: {info.consularHours}
+                    </div>
+                  )}
                 </div>
               </li>
             </ul>
@@ -274,7 +311,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onShowToast }) => {
               <span>Circunscrição & Jurisdição</span>
             </h3>
             <p className="text-xs text-gray-300 leading-relaxed">
-              A Missão Diplomática em Madrid detém jurisdição em todo o território espanhol e jurisdição concorrente no <strong>Principado de Andorra</strong>, prestando serviços consulares integrais e promovendo as relações bilaterais de amizade e cooperação.
+              A Missão Diplomática detém jurisdição em <strong>{info.jurisdiction}</strong>, prestando serviços consulares integrais e promovendo as relações bilaterais de amizade e cooperação.
             </p>
           </div>
 

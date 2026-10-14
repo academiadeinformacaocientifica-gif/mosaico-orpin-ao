@@ -32,6 +32,7 @@ const TABLES_TO_CHECK = [
   { key: 'natural_wonders', name: 'natural_wonders', label: '7 Maravilhas de Angola' },
   { key: 'cultural_events', name: 'cultural_events', label: 'Agenda Cultural' },
   { key: 'diplomatic_events', name: 'diplomatic_events', label: 'Agenda Missão Diplomática' },
+  { key: 'embassy_info', name: 'embassy_info', label: 'Dados da Embaixada' },
 ];
 
 export async function checkDatabaseHealth(): Promise<DbHealthReport> {
