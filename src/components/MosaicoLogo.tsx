@@ -1,5 +1,5 @@
 import React from 'react';
-import logoMosaicoImg from '../assets/images/logo_mosaico.jpeg';
+import logoMosaicoImg from '../assets/images/LOGO.jpg.jpeg';
 import iconMosaicoSquareImg from '../assets/images/icon_mosaico_square_1787501925065.jpg';
 
 interface MosaicoLogoProps {
@@ -44,14 +44,14 @@ export const MosaicoLogo: React.FC<MosaicoLogoProps> = ({
 
   // Full official banner logo
   const heightClasses = {
-    sm: 'h-7',
-    md: 'h-9',
-    lg: 'h-11',
-    xl: 'h-14'
+    sm: 'h-8',
+    md: 'h-11',
+    lg: 'h-14',
+    xl: 'h-16'
   };
 
   return (
-    <div className={`inline-flex items-center justify-center overflow-hidden rounded-md bg-[#e61e14] shadow-xs ${heightClasses[size]} ${className}`}>
+    <div className={`inline-flex items-center justify-center overflow-hidden rounded-md bg-white px-2 py-0.5 shadow-xs ${heightClasses[size]} ${className}`}>
       <img 
         src={logoMosaicoImg} 
         alt="Logo Oficial Revista MOSAICO ANGOLA" 

@@ -6,7 +6,7 @@ import forumRecursosMineraisImg from '../assets/images/forum_recursos_minerais_1
 import iconMosaicoSquareImg from '../assets/images/icon_mosaico_square_1787501925065.jpg';
 import imexBarcelonaImg from '../assets/images/imex_barcelona_angola_1787497730037.jpg.jpeg';
 import independencia50Img from '../assets/images/independencia_50_madrid_1787496814208.jpg.jpeg';
-import logoMosaicoImg from '../assets/images/logo_mosaico.jpeg';
+import logoMosaicoImg from '../assets/images/LOGO.jpg.jpeg';
 import onuTurismoImg from '../assets/images/onu_turismo_madrid_1787497879619.jpg.jpeg';
 import vityNsalambiImg from '../assets/images/vity_nsalambi_sagrada_familia_1787497295778.jpg.jpeg';
 
