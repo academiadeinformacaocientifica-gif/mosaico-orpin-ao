@@ -73,10 +73,8 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onShowToast, embassy
           
           {/* COLUMN 1: BRAND & EMBASSY IDENTITY */}
           <div>
-            <div className="relative inline-block mb-3.5 pb-2.5 cursor-pointer" onClick={() => onNavigate('home')}>
+            <div className="relative inline-block mb-4 cursor-pointer" onClick={() => onNavigate('home')}>
               <MosaicoLogo size="md" />
-              {/* ANGOLAN FLAG COLOR STRIP ACCENT */}
-              <div className="mt-2 w-full h-[4px] rounded-[2px] bg-gradient-to-r from-white via-[#ffcc00] to-black" />
             </div>
 
             <p className="text-xs text-white/90 leading-relaxed mb-4">
