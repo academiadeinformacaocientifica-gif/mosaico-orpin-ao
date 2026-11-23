@@ -35,7 +35,7 @@ interface EmbassyInfoRow {
   google_maps_url: string | null;
   social_facebook?: string | null;
   social_instagram?: string | null;
-  social_linkedin?: string | null;
+  social_youtube?: string | null;
   social_x?: string | null;
   updated_at: string;
 }
@@ -66,7 +66,7 @@ function rowToEmbassyInfo(row: EmbassyInfoRow): EmbassyInfo {
     googleMapsUrl: row.google_maps_url || DEFAULT_EMBASSY_INFO.googleMapsUrl,
     socialFacebook: row.social_facebook ?? DEFAULT_EMBASSY_INFO.socialFacebook,
     socialInstagram: row.social_instagram ?? DEFAULT_EMBASSY_INFO.socialInstagram,
-    socialLinkedin: row.social_linkedin ?? DEFAULT_EMBASSY_INFO.socialLinkedin,
+    socialYoutube: row.social_youtube ?? DEFAULT_EMBASSY_INFO.socialYoutube,
     socialX: row.social_x ?? DEFAULT_EMBASSY_INFO.socialX,
     updatedAt: row.updated_at,
   };
@@ -98,7 +98,7 @@ function embassyInfoToRow(info: EmbassyInfo) {
     google_maps_url: info.googleMapsUrl || null,
     social_facebook: info.socialFacebook || null,
     social_instagram: info.socialInstagram || null,
-    social_linkedin: info.socialLinkedin || null,
+    social_youtube: info.socialYoutube || null,
     social_x: info.socialX || null,
     updated_at: new Date().toISOString(),
   };

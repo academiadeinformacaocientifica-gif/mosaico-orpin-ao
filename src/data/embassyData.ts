@@ -30,7 +30,7 @@ export const DEFAULT_EMBASSY_INFO: EmbassyInfo = {
   googleMapsUrl: 'https://maps.google.com/?q=Calle+de+Lagasca+88+Madrid+Spain',
   socialFacebook: 'https://www.facebook.com',
   socialInstagram: 'https://www.instagram.com',
-  socialLinkedin: 'https://www.linkedin.com',
+  socialYoutube: 'https://www.youtube.com',
   socialX: 'https://x.com',
   updatedAt: new Date().toISOString(),
 };

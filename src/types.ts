@@ -217,7 +217,7 @@ export interface EmbassyInfo {
   googleMapsUrl?: string;
   socialFacebook?: string;
   socialInstagram?: string;
-  socialLinkedin?: string;
+  socialYoutube?: string;
   socialX?: string;
   updatedAt?: string;
 }

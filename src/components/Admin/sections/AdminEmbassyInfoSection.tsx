@@ -525,14 +525,14 @@ export const AdminEmbassyInfoSection: React.FC<AdminEmbassyInfoSectionProps> = (
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    LinkedIn
+                    YouTube
                   </label>
                   <input
                     type="url"
-                    value={formData.socialLinkedin || ''}
-                    onChange={(e) => handleChange('socialLinkedin', e.target.value)}
+                    value={formData.socialYoutube || ''}
+                    onChange={(e) => handleChange('socialYoutube', e.target.value)}
                     className="w-full px-3.5 py-2 text-xs rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#d9251d] focus:border-transparent"
-                    placeholder="https://www.linkedin.com/..."
+                    placeholder="https://www.youtube.com/@..."
                   />
                 </div>
 

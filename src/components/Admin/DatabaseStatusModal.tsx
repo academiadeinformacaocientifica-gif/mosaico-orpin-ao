@@ -251,14 +251,14 @@ create table if not exists public.embassy_info (
   google_maps_url       text default 'https://maps.google.com/?q=Calle+de+Lagasca+88+Madrid+Spain',
   social_facebook       text,
   social_instagram      text,
-  social_linkedin       text,
+  social_youtube        text,
   social_x              text,
   updated_at            timestamptz not null default now()
 );
 
 alter table public.embassy_info add column if not exists social_facebook text;
 alter table public.embassy_info add column if not exists social_instagram text;
-alter table public.embassy_info add column if not exists social_linkedin text;
+alter table public.embassy_info add column if not exists social_youtube text;
 alter table public.embassy_info add column if not exists social_x text;
 
 -- 11. SEGURANÇA E RLS EM TODAS AS TABELAS ------------------------------------
