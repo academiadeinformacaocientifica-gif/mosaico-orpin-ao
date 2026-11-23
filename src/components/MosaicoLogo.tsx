@@ -6,12 +6,14 @@ interface MosaicoLogoProps {
   className?: string;
   variant?: 'banner' | 'icon' | 'badge' | 'svg';
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  seamless?: boolean;
 }
 
 export const MosaicoLogo: React.FC<MosaicoLogoProps> = ({ 
   className = '', 
   variant = 'banner',
-  size = 'md' 
+  size = 'md',
+  seamless = false,
 }) => {
   if (variant === 'icon') {
     const sizeClasses = {
@@ -42,21 +44,27 @@ export const MosaicoLogo: React.FC<MosaicoLogoProps> = ({
     );
   }
 
-  // Full official banner logo
+  // Full official banner logo (cropped vertically to remove blank canvas margins)
   const heightClasses = {
-    sm: 'h-8',
-    md: 'h-11',
-    lg: 'h-14',
-    xl: 'h-16'
+    sm: 'h-9',
+    md: 'h-12',
+    lg: 'h-14 xl:h-[68px]',
+    xl: 'h-20'
   };
 
+  const wrapperClasses = seamless
+    ? 'inline-flex items-center justify-center overflow-hidden bg-white'
+    : 'inline-flex items-center justify-center overflow-hidden rounded-md bg-white px-2.5 py-1 shadow-xs';
+
   return (
-    <div className={`inline-flex items-center justify-center overflow-hidden rounded-md bg-white px-2 py-0.5 shadow-xs ${heightClasses[size]} ${className}`}>
-      <img 
-        src={logoMosaicoImg} 
-        alt="Logo Oficial Revista MOSAICO ANGOLA" 
-        className="h-full w-auto object-contain max-w-full"
-      />
+    <div className={`${wrapperClasses} ${heightClasses[size]} ${className}`}>
+      <div className="h-full aspect-[3.8/1] overflow-hidden">
+        <img 
+          src={logoMosaicoImg} 
+          alt="Logo Oficial Revista MOSAICO ANGOLA" 
+          className="w-full h-full object-cover object-[50%_47.5%]"
+        />
+      </div>
     </div>
   );
 };

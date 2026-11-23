@@ -118,16 +118,16 @@ export const Header: React.FC<HeaderProps> = ({
       <header className={`bg-white border-b border-[#e0e0e0] sticky top-0 shadow-xs transition-colors duration-200 ${isSearchFocused ? 'z-50' : 'z-30'}`}>
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6">
           {/* TOP BAR */}
-          <div className="flex items-center justify-between py-3.5 border-b border-[#f0f0f0]">
+          <div className="flex items-center justify-between py-2 sm:py-2.5 border-b border-[#f0f0f0]">
             {/* LOGO & EMBASSY SUBTITLE */}
             <div 
-              className="flex items-center gap-3.5 cursor-pointer group"
+              className="flex items-center gap-3 xl:gap-4 cursor-pointer group shrink-0"
               onClick={() => handleNavClick('home')}
             >
-              <div id="logo-btn" className="transition-transform group-hover:scale-105">
-                <MosaicoLogo size="md" />
+              <div id="logo-btn" className="transition-transform group-hover:scale-[1.03] shrink-0">
+                <MosaicoLogo size="lg" seamless />
               </div>
-              <div className="text-[10px] font-bold text-[#444] uppercase leading-snug tracking-[0.5px] border-l-2 border-[#d9251d] pl-2.5 max-w-[280px] hidden sm:block">
+              <div className="text-[10px] font-bold text-[#444] uppercase leading-snug tracking-[0.5px] border-l-2 border-[#d9251d] pl-2.5 max-w-[230px] xl:max-w-[280px] hidden sm:block">
                 REVISTA DA EMBAIXADA DA REPÚBLICA DE ANGOLA NO REINO DE ESPANHA E PRINCIPADO DE ANDORRA
               </div>
             </div>
