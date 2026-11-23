@@ -1,0 +1,2477 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState, useMemo } from 'react';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  LogOut,
+  Home,
+  Loader2,
+  Star,
+  Newspaper,
+  Image as ImageIcon,
+  Video as VideoIcon,
+  BookMarked,
+  Layers,
+  Play,
+  Search,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
+  Compass,
+  MapPin,
+  Sparkles,
+  FileText,
+  Download,
+  FileUp,
+  Database,
+  AlertTriangle,
+  CalendarDays,
+  Landmark,
+  Feather,
+  Building2,
+} from 'lucide-react';
+import {
+  Article,
+  CategoryId,
+  GalleryItem,
+  VideoItem,
+  MagazineEdition,
+  ConsularDocument,
+  CulturalEvent,
+  DiplomaticEvent,
+  EmbassyInfo,
+} from '../../types';
+import { NaturalWonder } from '../../data/wondersData';
+import { useAuth } from '../../lib/AuthContext';
+import { isSupabaseConfigured } from '../../lib/supabase';
+import { ArticleInput, createArticle, updateArticle, deleteArticle } from '../../lib/articleService';
+import {
+  GalleryInput,
+  createGalleryItem,
+  updateGalleryItem,
+  deleteGalleryItem,
+} from '../../lib/galleryService';
+import {
+  VideoInput,
+  createVideoItem,
+  updateVideoItem,
+  deleteVideoItem,
+} from '../../lib/videoService';
+import {
+  MagazineEditionInput,
+  createMagazineEdition,
+  updateMagazineEdition,
+  deleteMagazineEdition,
+} from '../../lib/editionService';
+import {
+  NaturalWonderInput,
+  createNaturalWonder,
+  updateNaturalWonder,
+  deleteNaturalWonder,
+} from '../../lib/wonderService';
+import {
+  ConsularDocumentInput,
+  createConsularDocument,
+  updateConsularDocument,
+  deleteConsularDocument,
+} from '../../lib/consularDocService';
+import { generateAndDownloadConsularDocument } from '../../lib/consularDocDownload';
+import { ArticleFormModal } from './ArticleFormModal';
+import { GalleryFormModal } from './GalleryFormModal';
+import { VideoFormModal } from './VideoFormModal';
+import { EditionFormModal } from './EditionFormModal';
+import { WonderFormModal } from './WonderFormModal';
+import { ConsularDocFormModal } from './ConsularDocFormModal';
+import { DatabaseStatusModal } from './DatabaseStatusModal';
+import { BackupModal } from './BackupModal';
+import { AdminCulturalAgendaSection } from './sections/AdminCulturalAgendaSection';
+import { AdminDiplomaticAgendaSection } from './sections/AdminDiplomaticAgendaSection';
+import { AdminEmbassyInfoSection } from './sections/AdminEmbassyInfoSection';
+
+type AdminTab =
+  | 'noticias'
+  | 'blog'
+  | 'documentos'
+  | 'maravilhas'
+  | 'edicoes'
+  | 'galeria'
+  | 'videos'
+  | 'agenda-cultural'
+  | 'agenda-diplomatica'
+  | 'dados-embaixada';
+type StatusFilter = 'todos' | 'publicados' | 'rascunhos';
+
+interface AdminDashboardProps {
+  articles: Article[];
+  galleryItems: GalleryItem[];
+  videoItems: VideoItem[];
+  magazineEditions: MagazineEdition[];
+  naturalWonders: NaturalWonder[];
+  consularDocs: ConsularDocument[];
+  culturalEvents: CulturalEvent[];
+  diplomaticEvents: DiplomaticEvent[];
+  embassyInfo: EmbassyInfo;
+  loading: boolean;
+  loadError: string | null;
+  onArticlesChanged: () => void;
+  onGalleryChanged: () => void;
+  onVideosChanged: () => void;
+  onEditionsChanged: () => void;
+  onWondersChanged: () => void;
+  onConsularDocsChanged: () => void;
+  onCulturalEventsChanged: () => void;
+  onDiplomaticEventsChanged: () => void;
+  onEmbassyInfoChanged: (updated: EmbassyInfo) => void;
+  onGoToSite: () => void;
+  onShowToast: (msg: string) => void;
+}
+
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({
+  articles,
+  galleryItems,
+  videoItems,
+  magazineEditions,
+  naturalWonders,
+  consularDocs,
+  culturalEvents,
+  diplomaticEvents,
+  embassyInfo,
+  loading,
+  loadError,
+  onArticlesChanged,
+  onGalleryChanged,
+  onVideosChanged,
+  onEditionsChanged,
+  onWondersChanged,
+  onConsularDocsChanged,
+  onCulturalEventsChanged,
+  onDiplomaticEventsChanged,
+  onEmbassyInfoChanged,
+  onGoToSite,
+  onShowToast,
+}) => {
+  const { user, signOut } = useAuth();
+  const [activeTab, setActiveTab] = useState<AdminTab>('noticias');
+
+  // Search & Status filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
+
+  // Triggers for external modal opens
+  const [culturalCreateTrigger, setCulturalCreateTrigger] = useState(0);
+  const [diplomaticCreateTrigger, setDiplomaticCreateTrigger] = useState(0);
+
+  // Article State
+  const [articleFormOpen, setArticleFormOpen] = useState(false);
+  const [editingArticle, setEditingArticle] = useState<Article | null>(null);
+  const [articleDefaultCategory, setArticleDefaultCategory] = useState<CategoryId>('politica');
+
+  // Gallery State
+  const [galleryFormOpen, setGalleryFormOpen] = useState(false);
+  const [editingGalleryItem, setEditingGalleryItem] = useState<GalleryItem | null>(null);
+
+  // Video State
+  const [videoFormOpen, setVideoFormOpen] = useState(false);
+  const [editingVideoItem, setEditingVideoItem] = useState<VideoItem | null>(null);
+
+  // Magazine Edition State
+  const [editionFormOpen, setEditionFormOpen] = useState(false);
+  const [editingEdition, setEditingEdition] = useState<MagazineEdition | null>(null);
+
+  // Natural Wonders State
+  const [wonderFormOpen, setWonderFormOpen] = useState(false);
+  const [editingWonder, setEditingWonder] = useState<NaturalWonder | null>(null);
+
+  // Consular Documents State
+  const [consularDocFormOpen, setConsularDocFormOpen] = useState(false);
+  const [editingConsularDoc, setEditingConsularDoc] = useState<ConsularDocument | null>(null);
+
+  // Database Diagnostic Modal
+  const [dbStatusOpen, setDbStatusOpen] = useState(false);
+
+  // Backup & Disaster Recovery Modal
+  const [backupModalOpen, setBackupModalOpen] = useState(false);
+
+  // Deletion tracking
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  // Sorted & Filtered Articles (News)
+  const filteredArticles = useMemo(() => {
+    return [...articles]
+      .filter((art) => art.categoryId !== 'blog')
+      .sort((a, b) => {
+        const da = a.isoDate ? new Date(a.isoDate).getTime() : 0;
+        const db = b.isoDate ? new Date(b.isoDate).getTime() : 0;
+        return db - da;
+      })
+      .filter((art) => {
+        if (statusFilter === 'publicados' && art.isPublished === false) return false;
+        if (statusFilter === 'rascunhos' && art.isPublished !== false) return false;
+        if (!searchQuery.trim()) return true;
+        const q = searchQuery.toLowerCase();
+        return (
+          art.title.toLowerCase().includes(q) ||
+          art.category.toLowerCase().includes(q) ||
+          art.description.toLowerCase().includes(q)
+        );
+      });
+  }, [articles, searchQuery, statusFilter]);
+
+  // Sorted & Filtered Blog Articles
+  const filteredBlogArticles = useMemo(() => {
+    return [...articles]
+      .filter((art) => art.categoryId === 'blog' || art.category.toLowerCase().includes('opinião') || art.category.toLowerCase().includes('blog'))
+      .sort((a, b) => {
+        const da = a.isoDate ? new Date(a.isoDate).getTime() : 0;
+        const db = b.isoDate ? new Date(b.isoDate).getTime() : 0;
+        return db - da;
+      })
+      .filter((art) => {
+        if (statusFilter === 'publicados' && art.isPublished === false) return false;
+        if (statusFilter === 'rascunhos' && art.isPublished !== false) return false;
+        if (!searchQuery.trim()) return true;
+        const q = searchQuery.toLowerCase();
+        return (
+          art.title.toLowerCase().includes(q) ||
+          art.category.toLowerCase().includes(q) ||
+          art.description.toLowerCase().includes(q) ||
+          (art.author?.name && art.author.name.toLowerCase().includes(q))
+        );
+      });
+  }, [articles, searchQuery, statusFilter]);
+
+  // Filtered Gallery Items
+  const filteredGalleryItems = useMemo(() => {
+    return [...galleryItems].filter((item) => {
+      if (statusFilter === 'publicados' && item.isPublished === false) return false;
+      if (statusFilter === 'rascunhos' && item.isPublished !== false) return false;
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        item.title.toLowerCase().includes(q) ||
+        item.category.toLowerCase().includes(q) ||
+        item.description.toLowerCase().includes(q)
+      );
+    });
+  }, [galleryItems, searchQuery, statusFilter]);
+
+  // Filtered Video Items
+  const filteredVideoItems = useMemo(() => {
+    return [...videoItems].filter((item) => {
+      if (statusFilter === 'publicados' && item.isPublished === false) return false;
+      if (statusFilter === 'rascunhos' && item.isPublished !== false) return false;
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        item.title.toLowerCase().includes(q) ||
+        item.category.toLowerCase().includes(q) ||
+        item.description.toLowerCase().includes(q)
+      );
+    });
+  }, [videoItems, searchQuery, statusFilter]);
+
+  // Filtered Magazine Editions
+  const filteredMagazineEditions = useMemo(() => {
+    return [...magazineEditions]
+      .sort((a, b) => (b.editionNumber || 0) - (a.editionNumber || 0))
+      .filter((ed) => {
+        if (statusFilter === 'publicados' && ed.isPublished === false) return false;
+        if (statusFilter === 'rascunhos' && ed.isPublished !== false) return false;
+        if (!searchQuery.trim()) return true;
+        const q = searchQuery.toLowerCase();
+        return (
+          ed.title.toLowerCase().includes(q) ||
+          ed.theme.toLowerCase().includes(q) ||
+          ed.period.toLowerCase().includes(q) ||
+          ed.editorialNote.toLowerCase().includes(q) ||
+          (ed.highlights && ed.highlights.some((h) => h.toLowerCase().includes(q)))
+        );
+      });
+  }, [magazineEditions, searchQuery, statusFilter]);
+
+  // Filtered Natural Wonders
+  const filteredNaturalWonders = useMemo(() => {
+    return [...naturalWonders]
+      .sort((a, b) => (a.number || 0) - (b.number || 0))
+      .filter((w) => {
+        if (statusFilter === 'publicados' && w.isPublished === false) return false;
+        if (statusFilter === 'rascunhos' && w.isPublished !== false) return false;
+        if (!searchQuery.trim()) return true;
+        const q = searchQuery.toLowerCase();
+        return (
+          w.name.toLowerCase().includes(q) ||
+          w.province.toLowerCase().includes(q) ||
+          w.location.toLowerCase().includes(q) ||
+          w.summary.toLowerCase().includes(q) ||
+          w.tagline.toLowerCase().includes(q)
+        );
+      });
+  }, [naturalWonders, searchQuery, statusFilter]);
+
+  // Stats Counters
+  const articleStats = useMemo(() => {
+    const list = articles.filter((a) => a.categoryId !== 'blog');
+    const published = list.filter((a) => a.isPublished !== false).length;
+    const drafts = list.length - published;
+    return { total: list.length, published, drafts };
+  }, [articles]);
+
+  const blogStats = useMemo(() => {
+    const list = articles.filter((a) => a.categoryId === 'blog' || a.category.toLowerCase().includes('opinião') || a.category.toLowerCase().includes('blog'));
+    const published = list.filter((a) => a.isPublished !== false).length;
+    const drafts = list.length - published;
+    return { total: list.length, published, drafts };
+  }, [articles]);
+
+  const galleryStats = useMemo(() => {
+    const published = galleryItems.filter((i) => i.isPublished !== false).length;
+    const drafts = galleryItems.length - published;
+    return { total: galleryItems.length, published, drafts };
+  }, [galleryItems]);
+
+  const videoStats = useMemo(() => {
+    const published = videoItems.filter((v) => v.isPublished !== false).length;
+    const drafts = videoItems.length - published;
+    return { total: videoItems.length, published, drafts };
+  }, [videoItems]);
+
+  const magazineStats = useMemo(() => {
+    const published = magazineEditions.filter((e) => e.isPublished !== false).length;
+    const drafts = magazineEditions.length - published;
+    return { total: magazineEditions.length, published, drafts };
+  }, [magazineEditions]);
+
+  const wondersStats = useMemo(() => {
+    const published = naturalWonders.filter((w) => w.isPublished !== false).length;
+    const drafts = naturalWonders.length - published;
+    return { total: naturalWonders.length, published, drafts };
+  }, [naturalWonders]);
+
+  // Filtered Consular Documents
+  const filteredConsularDocs = useMemo(() => {
+    return [...consularDocs].filter((doc) => {
+      if (statusFilter === 'publicados' && doc.isPublished === false) return false;
+      if (statusFilter === 'rascunhos' && doc.isPublished !== false) return false;
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        doc.title.toLowerCase().includes(q) ||
+        doc.code.toLowerCase().includes(q) ||
+        doc.category.toLowerCase().includes(q) ||
+        (doc.categoryLabel && doc.categoryLabel.toLowerCase().includes(q)) ||
+        doc.description.toLowerCase().includes(q) ||
+        (doc.targetAudience && doc.targetAudience.toLowerCase().includes(q)) ||
+        doc.requirements.some((r) => r.toLowerCase().includes(q))
+      );
+    });
+  }, [consularDocs, searchQuery, statusFilter]);
+
+  const consularDocStats = useMemo(() => {
+    const published = consularDocs.filter((d) => d.isPublished !== false).length;
+    const drafts = consularDocs.length - published;
+    return { total: consularDocs.length, published, drafts };
+  }, [consularDocs]);
+
+  const culturalStats = useMemo(() => {
+    const published = culturalEvents.filter((e) => e.isPublished !== false).length;
+    const drafts = culturalEvents.length - published;
+    return { total: culturalEvents.length, published, drafts };
+  }, [culturalEvents]);
+
+  const diplomaticStats = useMemo(() => {
+    const published = diplomaticEvents.filter((e) => e.isPublished !== false).length;
+    const drafts = diplomaticEvents.length - published;
+    return { total: diplomaticEvents.length, published, drafts };
+  }, [diplomaticEvents]);
+
+  // Articles CRUD Handlers
+  const handleSaveArticle = async (id: string | null, input: ArticleInput) => {
+    if (id) {
+      await updateArticle(id, input);
+      onShowToast(input.isPublished ? 'Notícia publicada com sucesso.' : 'Rascunho guardado com sucesso.');
+    } else {
+      await createArticle(input);
+      onShowToast(input.isPublished ? 'Notícia publicada com sucesso!' : 'Rascunho guardado com sucesso!');
+    }
+    setArticleFormOpen(false);
+    setEditingArticle(null);
+    onArticlesChanged();
+  };
+
+  const handleToggleArticlePublish = async (article: Article) => {
+    try {
+      const nextPublished = !article.isPublished;
+      await updateArticle(article.id, {
+        ...article,
+        isPublished: nextPublished,
+      });
+      onShowToast(nextPublished ? 'Notícia publicada com sucesso!' : 'Notícia colocada em rascunho.');
+      onArticlesChanged();
+    } catch (err) {
+      onShowToast('Erro ao atualizar estado de publicação.');
+      console.error(err);
+    }
+  };
+
+  const handleToggleArticleFeatured = async (article: Article) => {
+    try {
+      const isCurrentlyFeatured = Boolean(article.isFeatured || article.isCarousel);
+      const nextFeatured = !isCurrentlyFeatured;
+      await updateArticle(article.id, {
+        ...article,
+        isFeatured: nextFeatured,
+        isCarousel: nextFeatured,
+      });
+      onShowToast(
+        nextFeatured
+          ? 'Notícia colocada nos destaques (slides) da página principal!'
+          : 'Notícia removida dos destaques da página principal.'
+      );
+      onArticlesChanged();
+    } catch (err) {
+      onShowToast('Erro ao atualizar destaque da notícia.');
+      console.error(err);
+    }
+  };
+
+  const handleDeleteArticle = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await deleteArticle(id);
+      onShowToast('Notícia removida com sucesso.');
+      onArticlesChanged();
+    } catch (err) {
+      onShowToast('Não foi possível remover a notícia.');
+      console.error(err);
+    } finally {
+      setDeletingId(null);
+      setConfirmDeleteId(null);
+    }
+  };
+
+  // Gallery CRUD Handlers
+  const handleSaveGallery = async (id: string | null, input: GalleryInput | GalleryInput[]) => {
+    if (id && !Array.isArray(input)) {
+      await updateGalleryItem(id, input);
+      onShowToast(input.isPublished ? 'Imagem atualizada e publicada na galeria.' : 'Rascunho de imagem guardado.');
+    } else {
+      const list = Array.isArray(input) ? input : [input];
+      for (const item of list) {
+        await createGalleryItem(item);
+      }
+      onShowToast(
+        list.length > 1
+          ? `${list.length} fotografias adicionadas com sucesso à galeria!`
+          : list[0]?.isPublished
+          ? 'Nova imagem publicada na galeria!'
+          : 'Rascunho de imagem guardado!'
+      );
+    }
+    setGalleryFormOpen(false);
+    setEditingGalleryItem(null);
+    onGalleryChanged();
+  };
+
+  const handleToggleGalleryPublish = async (item: GalleryItem) => {
+    try {
+      const nextPublished = !item.isPublished;
+      await updateGalleryItem(item.id, {
+        ...item,
+        isPublished: nextPublished,
+      });
+      onShowToast(nextPublished ? 'Imagem publicada com sucesso na galeria!' : 'Imagem colocada em rascunho.');
+      onGalleryChanged();
+    } catch (err) {
+      onShowToast('Erro ao atualizar estado da imagem.');
+      console.error(err);
+    }
+  };
+
+  const handleDeleteGallery = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await deleteGalleryItem(id);
+      onShowToast('Imagem removida da galeria com sucesso.');
+      onGalleryChanged();
+    } catch (err) {
+      onShowToast('Não foi possível remover o registo da galeria.');
+      console.error(err);
+    } finally {
+      setDeletingId(null);
+      setConfirmDeleteId(null);
+    }
+  };
+
+  // Video CRUD Handlers
+  const handleSaveVideo = async (id: string | null, input: VideoInput) => {
+    if (id) {
+      await updateVideoItem(id, input);
+      onShowToast(input.isPublished ? 'Vídeo atualizado e publicado com sucesso.' : 'Rascunho de vídeo guardado.');
+    } else {
+      await createVideoItem(input);
+      onShowToast(input.isPublished ? 'Novo vídeo publicado com sucesso!' : 'Rascunho de vídeo guardado!');
+    }
+    setVideoFormOpen(false);
+    setEditingVideoItem(null);
+    onVideosChanged();
+  };
+
+  const handleToggleVideoPublish = async (item: VideoItem) => {
+    try {
+      const nextPublished = !item.isPublished;
+      await updateVideoItem(item.id, {
+        ...item,
+        isPublished: nextPublished,
+      });
+      onShowToast(nextPublished ? 'Vídeo publicado com sucesso!' : 'Vídeo colocado em rascunho.');
+      onVideosChanged();
+    } catch (err) {
+      onShowToast('Erro ao atualizar estado do vídeo.');
+      console.error(err);
+    }
+  };
+
+  const handleDeleteVideo = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await deleteVideoItem(id);
+      onShowToast('Vídeo removido com sucesso.');
+      onVideosChanged();
+    } catch (err) {
+      onShowToast('Não foi possível remover o vídeo.');
+      console.error(err);
+    } finally {
+      setDeletingId(null);
+      setConfirmDeleteId(null);
+    }
+  };
+
+  // Magazine Edition CRUD Handlers
+  const handleSaveEdition = async (id: string | null, input: MagazineEditionInput) => {
+    if (id) {
+      await updateMagazineEdition(id, input);
+      onShowToast(input.isPublished ? 'Edição da revista atualizada e publicada com sucesso.' : 'Rascunho da edição guardado.');
+    } else {
+      await createMagazineEdition(input);
+      onShowToast(input.isPublished ? 'Nova edição da revista publicada com sucesso!' : 'Rascunho da edição guardado!');
+    }
+    setEditionFormOpen(false);
+    setEditingEdition(null);
+    onEditionsChanged();
+  };
+
+  const handleToggleEditionPublish = async (edition: MagazineEdition) => {
+    try {
+      const nextPublished = !edition.isPublished;
+      await updateMagazineEdition(edition.id, {
+        ...edition,
+        isPublished: nextPublished,
+      });
+      onShowToast(nextPublished ? 'Edição da revista publicada no portal!' : 'Edição colocada em rascunho.');
+      onEditionsChanged();
+    } catch (err) {
+      onShowToast('Erro ao atualizar estado da edição da revista.');
+      console.error(err);
+    }
+  };
+
+  const handleDeleteEdition = async (id: string) => {
+    setDeletingId(id);
+    try {
+      const edition = magazineEditions.find((e) => e.id === id);
+      await deleteMagazineEdition(id, edition?.editionNumber);
+      onShowToast('Edição da revista removida com sucesso.');
+      onEditionsChanged();
+    } catch (err) {
+      onShowToast('Não foi possível remover a edição.');
+      console.error(err);
+    } finally {
+      setDeletingId(null);
+      setConfirmDeleteId(null);
+    }
+  };
+
+  // Natural Wonders CRUD Handlers
+  const handleSaveWonder = async (id: string | null, input: NaturalWonderInput) => {
+    if (id) {
+      await updateNaturalWonder(id, input);
+      onShowToast(
+        input.isPublished !== false
+          ? 'Maravilha natural atualizada com sucesso!'
+          : 'Rascunho guardado com sucesso.'
+      );
+    } else {
+      await createNaturalWonder(input);
+      onShowToast(
+        input.isPublished !== false
+          ? 'Nova maravilha natural criada com sucesso!'
+          : 'Rascunho criado com sucesso.'
+      );
+    }
+    setWonderFormOpen(false);
+    setEditingWonder(null);
+    onWondersChanged();
+  };
+
+  const handleToggleWonderPublish = async (wonder: NaturalWonder) => {
+    const nextPublished = wonder.isPublished === false;
+    try {
+      await updateNaturalWonder(wonder.id, {
+        number: wonder.number,
+        name: wonder.name,
+        officialTitle: wonder.officialTitle,
+        province: wonder.province,
+        location: wonder.location,
+        tagline: wonder.tagline,
+        summary: wonder.summary,
+        fullDescription: wonder.fullDescription,
+        geographyAndNature: wonder.geographyAndNature,
+        howToVisit: wonder.howToVisit,
+        image: wonder.image,
+        galleryImages: wonder.galleryImages,
+        highlights: wonder.highlights,
+        facts: wonder.facts,
+        isPublished: nextPublished,
+      });
+      onShowToast(
+        nextPublished
+          ? 'Maravilha natural publicada no portal!'
+          : 'Maravilha colocada em rascunho.'
+      );
+      onWondersChanged();
+    } catch (err) {
+      onShowToast('Erro ao atualizar estado da maravilha natural.');
+      console.error(err);
+    }
+  };
+
+  const handleDeleteWonder = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await deleteNaturalWonder(id);
+      onShowToast('Maravilha natural removida com sucesso.');
+      onWondersChanged();
+    } catch (err) {
+      onShowToast('Não foi possível remover a maravilha natural.');
+      console.error(err);
+    } finally {
+      setDeletingId(null);
+      setConfirmDeleteId(null);
+    }
+  };
+
+  // Consular Documents Handlers
+  const handleSaveConsularDoc = async (id: string | null, input: ConsularDocumentInput) => {
+    if (id) {
+      await updateConsularDocument(id, input);
+      onShowToast(input.isPublished ? 'Documento consular atualizado e publicado com sucesso.' : 'Rascunho de documento guardado.');
+    } else {
+      await createConsularDocument(input);
+      onShowToast(input.isPublished ? 'Novo documento consular publicado com sucesso!' : 'Novo rascunho de documento guardado.');
+    }
+    setConsularDocFormOpen(false);
+    setEditingConsularDoc(null);
+    onConsularDocsChanged();
+  };
+
+  const handleToggleConsularDocPublish = async (doc: ConsularDocument) => {
+    try {
+      const nextPublished = !doc.isPublished;
+      await updateConsularDocument(doc.id, {
+        title: doc.title,
+        code: doc.code,
+        category: doc.category,
+        categoryLabel: doc.categoryLabel,
+        description: doc.description,
+        fileFormat: doc.fileFormat,
+        fileSize: doc.fileSize,
+        requirements: doc.requirements,
+        instructions: doc.instructions,
+        targetAudience: doc.targetAudience,
+        downloadFileName: doc.downloadFileName,
+        badge: doc.badge,
+        fileUrl: doc.fileUrl,
+        isPublished: nextPublished,
+      });
+      onShowToast(
+        nextPublished
+          ? 'Documento consular publicado no portal!'
+          : 'Documento consular colocado em rascunho.'
+      );
+      onConsularDocsChanged();
+    } catch (err) {
+      onShowToast('Erro ao atualizar estado do documento consular.');
+      console.error(err);
+    }
+  };
+
+  const handleDeleteConsularDoc = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await deleteConsularDocument(id);
+      onShowToast('Documento consular removido com sucesso.');
+      onConsularDocsChanged();
+    } catch (err) {
+      onShowToast('Não foi possível remover o documento consular.');
+      console.error(err);
+    } finally {
+      setDeletingId(null);
+      setConfirmDeleteId(null);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#f4f5f7]">
+      {/* HEADER */}
+      <header className="bg-white border-b border-[#e0e0e0] sticky top-0 z-40 shadow-xs">
+        <div className="max-w-[1180px] mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-[#d9251d] text-white font-bold text-base px-3.5 py-1.5 rounded-tl-xl rounded-br-xl uppercase tracking-wider">
+              MOSAICO ANGOLA
+            </div>
+            <div>
+              <p className="text-sm font-bold text-[#111] leading-tight">
+                {user?.name || 'Painel de Administração'}
+              </p>
+              <p className="text-[11px] text-gray-500 leading-tight">
+                {user?.role ? `${user.role} • ` : ''}{user?.email}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setDbStatusOpen(true)}
+              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                isSupabaseConfigured
+                  ? 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
+                  : 'text-amber-800 bg-amber-50 border-amber-300 hover:bg-amber-100'
+              }`}
+              title="Diagnóstico de Conexão com a Nuvem e Sincronização Multi-dispositivo"
+            >
+              <Database className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">
+                {isSupabaseConfigured ? 'Base de Dados: Conectada' : 'Modo Local (Supabase Desconectado)'}
+              </span>
+              <span className="sm:hidden">
+                {isSupabaseConfigured ? 'Nuvem OK' : 'Modo Local'}
+              </span>
+            </button>
+            <button
+              onClick={() => setBackupModalOpen(true)}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition-all cursor-pointer"
+              title="Cópias de Segurança & Recuperação de Desastres (Backup & DR)"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Backup & DR</span>
+              <span className="sm:hidden">Backup</span>
+            </button>
+            <button
+              onClick={onGoToSite}
+              className="flex items-center gap-1.5 text-xs font-semibold text-[#444] hover:text-[#d9251d] px-3 py-1.5 rounded-lg hover:bg-[#f8f9fa] transition-colors cursor-pointer"
+            >
+              <Home className="w-3.5 h-3.5" />
+              Ver site
+            </button>
+            <button
+              onClick={signOut}
+              className="flex items-center gap-1.5 text-xs font-semibold text-white bg-[#111] hover:bg-[#333] px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Sair
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* MAIN CONTENT */}
+      <main className="max-w-[1180px] mx-auto px-4 sm:px-6 py-8">
+        {/* MULTI-DEVICE SYNC WARNING BANNER IF LOCAL MODE */}
+        {!isSupabaseConfigured && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-950 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-bold text-amber-950 uppercase tracking-wide">
+                  Aviso: Sincronização Multi-Dispositivo Requer Supabase Conectado
+                </p>
+                <p className="text-xs text-amber-900/90 mt-1 leading-relaxed">
+                  Actualmente o site está a operar em <strong>Modo Local Resiliente</strong> porque as variáveis do Supabase não estão configuradas neste servidor/hospedagem. Qualquer adição, edição ou eliminação fica guardada <strong>apenas na memória deste dispositivo</strong>. Para que o que fizer no telemóvel apareça no computador e vice-versa, ligue o Supabase.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setDbStatusOpen(true)}
+              className="shrink-0 text-xs font-bold bg-[#d9251d] hover:bg-[#b91e17] text-white px-4 py-2 rounded-xl transition-all shadow-xs cursor-pointer active:scale-95"
+            >
+              Diagnóstico & Script SQL
+            </button>
+          </div>
+        )}
+
+        {/* TOP TITLE */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-[#111] flex items-center gap-2">
+            <Layers className="w-6 h-6 text-[#d9251d]" />
+            <span>Gestão de Conteúdos do Portal</span>
+          </h1>
+          <p className="text-xs text-gray-500 mt-1">
+            Adicione, edite, publique e remova notícias, edições da revista, registos da galeria, eventos e vídeos com sincronização instantânea.
+          </p>
+        </div>
+
+        {/* MAIN LAYOUT: VERTICAL LEFT SIDEBAR + CONTENT AREA */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* VERTICAL LEFT SIDEBAR: AÇÕES DE CRIAÇÃO */}
+          <aside className="lg:col-span-3 xl:col-span-3">
+            <div className="bg-white p-4 rounded-2xl border border-gray-200/90 shadow-xs lg:sticky lg:top-20 space-y-3">
+              <div className="pb-3 border-b border-gray-100 flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-900 flex items-center gap-1.5">
+                    <Plus className="w-3.5 h-3.5 text-[#d9251d]" />
+                    <span>Adicionar Conteúdo</span>
+                  </h3>
+                  <p className="text-[11px] text-gray-400 mt-0.5">Criar novos registos no portal</p>
+                </div>
+              </div>
+
+              {/* VERTICAL MENU BUTTONS */}
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    setEditingArticle(null);
+                    setArticleDefaultCategory('politica');
+                    setArticleFormOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 bg-[#d9251d] hover:bg-[#b91e17] text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98 text-left justify-start"
+                  title="Criar nova notícia"
+                >
+                  <Plus className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Nova Notícia</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('blog');
+                    setEditingArticle(null);
+                    setArticleDefaultCategory('blog');
+                    setArticleFormOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 bg-orange-600 hover:bg-orange-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98 text-left justify-start"
+                  title="Adicionar nova matéria no blog ou coluna de opinião"
+                >
+                  <Plus className="w-4 h-4 shrink-0" />
+                  <Feather className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Nova Matéria no Blog</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setEditingConsularDoc(null);
+                    setConsularDocFormOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 bg-rose-800 hover:bg-rose-900 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98 text-left justify-start"
+                  title="Adicionar documento consular"
+                >
+                  <Plus className="w-4 h-4 shrink-0" />
+                  <FileText className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Novo Documento</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setEditingWonder(null);
+                    setWonderFormOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98 text-left justify-start"
+                  title="Registar nova maravilha natural"
+                >
+                  <Plus className="w-4 h-4 shrink-0" />
+                  <Compass className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Nova Maravilha</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setEditingEdition(null);
+                    setEditionFormOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98 text-left justify-start"
+                  title="Publicar nova edição da revista"
+                >
+                  <Plus className="w-4 h-4 shrink-0" />
+                  <BookMarked className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Nova Edição</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setEditingGalleryItem(null);
+                    setGalleryFormOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98 text-left justify-start"
+                  title="Carregar nova imagem na galeria"
+                >
+                  <Plus className="w-4 h-4 shrink-0" />
+                  <ImageIcon className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Nova Imagem</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setEditingVideoItem(null);
+                    setVideoFormOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98 text-left justify-start"
+                  title="Adicionar novo vídeo institucional"
+                >
+                  <Plus className="w-4 h-4 shrink-0" />
+                  <VideoIcon className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Novo Vídeo</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('agenda-cultural');
+                    setCulturalCreateTrigger((prev) => prev + 1);
+                  }}
+                  className="w-full flex items-center gap-2.5 bg-[#d9251d] hover:bg-[#b91e17] text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98 text-left justify-start"
+                  title="Registar novo evento cultural"
+                >
+                  <Plus className="w-4 h-4 shrink-0" />
+                  <CalendarDays className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Novo Evento Cultural</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('agenda-diplomatica');
+                    setDiplomaticCreateTrigger((prev) => prev + 1);
+                  }}
+                  className="w-full flex items-center gap-2.5 bg-stone-900 hover:bg-stone-800 text-amber-400 border border-amber-500/30 text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98 text-left justify-start"
+                  title="Registar novo compromisso diplomático"
+                >
+                  <Plus className="w-4 h-4 text-amber-400 shrink-0" />
+                  <Landmark className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span className="truncate">Novo Compromisso Diplomático</span>
+                </button>
+
+                <div className="pt-2 border-t border-gray-100">
+                  <button
+                    onClick={() => {
+                      setActiveTab('dados-embaixada');
+                      setSearchQuery('');
+                    }}
+                    className={`w-full flex items-center gap-2.5 text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98 text-left justify-start ${
+                      activeTab === 'dados-embaixada'
+                        ? 'bg-[#1e2330] text-amber-400 border border-amber-500/40'
+                        : 'bg-stone-100 hover:bg-stone-200 text-stone-800'
+                    }`}
+                    title="Gerir dados de contacto e chancelaria da Embaixada"
+                  >
+                    <Building2 className="w-4 h-4 shrink-0 text-amber-500" />
+                    <span className="truncate">Dados da Embaixada</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* MAIN CONTENT AREA */}
+          <div className="lg:col-span-9 xl:col-span-9 min-w-0">
+
+        {/* TABS SELECTOR */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 mb-6 bg-white p-1.5 rounded-xl shadow-xs">
+          <button
+            onClick={() => {
+              setActiveTab('noticias');
+              setSearchQuery('');
+            }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeTab === 'noticias'
+                ? 'bg-[#d9251d] text-white shadow-xs'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <Newspaper className="w-4 h-4" />
+            <span>Notícias</span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'noticias' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              {articleStats.total}
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('blog');
+              setSearchQuery('');
+            }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeTab === 'blog'
+                ? 'bg-orange-600 text-white shadow-xs'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <Feather className="w-4 h-4" />
+            <span>Blog & Opinião</span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'blog' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              {blogStats.total}
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('documentos');
+              setSearchQuery('');
+            }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeTab === 'documentos'
+                ? 'bg-rose-800 text-white shadow-xs'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            <span>Documentos Consulares</span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'documentos' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              {consularDocStats.total}
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('maravilhas');
+              setSearchQuery('');
+            }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeTab === 'maravilhas'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <Compass className="w-4 h-4" />
+            <span>7 Maravilhas</span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'maravilhas' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              {wondersStats.total}
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('edicoes');
+              setSearchQuery('');
+            }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeTab === 'edicoes'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <BookMarked className="w-4 h-4" />
+            <span>Revista (Edições)</span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'edicoes' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              {magazineStats.total}
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('galeria');
+              setSearchQuery('');
+            }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeTab === 'galeria'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <ImageIcon className="w-4 h-4" />
+            <span>Imagens (Galeria)</span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'galeria' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              {galleryStats.total}
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('videos');
+              setSearchQuery('');
+            }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeTab === 'videos'
+                ? 'bg-purple-600 text-white shadow-xs'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <VideoIcon className="w-4 h-4" />
+            <span>Vídeos</span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'videos' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              {videoStats.total}
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('agenda-cultural');
+              setSearchQuery('');
+            }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeTab === 'agenda-cultural'
+                ? 'bg-[#d9251d] text-white shadow-xs'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <CalendarDays className="w-4 h-4" />
+            <span>Agenda Cultural</span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'agenda-cultural' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              {culturalStats.total}
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('agenda-diplomatica');
+              setSearchQuery('');
+            }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeTab === 'agenda-diplomatica'
+                ? 'bg-[#1e2330] text-amber-400 border border-amber-500/40 shadow-xs'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <Landmark className="w-4 h-4" />
+            <span>Agenda Diplomática</span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'agenda-diplomatica' ? 'bg-amber-400/20 text-amber-300' : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              {diplomaticStats.total}
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('dados-embaixada');
+              setSearchQuery('');
+            }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeTab === 'dados-embaixada'
+                ? 'bg-[#1e2330] text-amber-400 border border-amber-500/40 shadow-xs'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <Building2 className="w-4 h-4" />
+            <span>Dados da Embaixada</span>
+          </button>
+        </div>
+
+        {/* SEARCH AND STATUS FILTER BAR */}
+        {activeTab !== 'dados-embaixada' && (
+          <div className="bg-white p-3.5 rounded-xl border border-gray-200/80 shadow-xs mb-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={`Pesquisar em ${
+                  activeTab === 'noticias'
+                    ? 'notícias'
+                    : activeTab === 'blog'
+                    ? 'matérias do blog'
+                    : activeTab === 'edicoes'
+                    ? 'edições da revista'
+                    : activeTab === 'galeria'
+                    ? 'galeria de imagens'
+                    : activeTab === 'videos'
+                    ? 'vídeos'
+                    : activeTab === 'agenda-cultural'
+                    ? 'eventos culturais'
+                    : activeTab === 'agenda-diplomatica'
+                    ? 'agenda diplomática'
+                    : 'documentos'
+                }...`}
+                className="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white outline-none focus:border-[#d9251d] transition-colors"
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
+              <span className="text-xs text-gray-500 font-medium mr-1 hidden sm:inline">Estado:</span>
+              <button
+                onClick={() => setStatusFilter('todos')}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                  statusFilter === 'todos'
+                    ? 'bg-gray-800 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Todos
+              </button>
+              <button
+                onClick={() => setStatusFilter('publicados')}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
+                  statusFilter === 'publicados'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                }`}
+              >
+                <CheckCircle2 className="w-3 h-3" />
+                Publicados (
+                {activeTab === 'noticias'
+                  ? articleStats.published
+                  : activeTab === 'blog'
+                  ? blogStats.published
+                  : activeTab === 'edicoes'
+                  ? magazineStats.published
+                  : activeTab === 'galeria'
+                  ? galleryStats.published
+                  : activeTab === 'videos'
+                  ? videoStats.published
+                  : activeTab === 'agenda-cultural'
+                  ? culturalStats.published
+                  : activeTab === 'agenda-diplomatica'
+                  ? diplomaticStats.published
+                  : consularDocStats.published}
+                )
+              </button>
+              <button
+                onClick={() => setStatusFilter('rascunhos')}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
+                  statusFilter === 'rascunhos'
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                }`}
+              >
+                <Clock className="w-3 h-3" />
+                Rascunhos (
+                {activeTab === 'noticias'
+                  ? articleStats.drafts
+                  : activeTab === 'blog'
+                  ? blogStats.drafts
+                  : activeTab === 'galeria'
+                  ? galleryStats.drafts
+                  : activeTab === 'videos'
+                  ? videoStats.drafts
+                  : activeTab === 'agenda-cultural'
+                  ? culturalStats.drafts
+                  : activeTab === 'agenda-diplomatica'
+                  ? diplomaticStats.drafts
+                  : consularDocStats.drafts}
+                )
+              </button>
+            </div>
+          </div>
+        )}
+
+        {loadError && (
+          <div className="bg-red-50 border border-red-200 text-[#d9251d] text-sm rounded-xl p-4 mb-6">
+            {loadError}
+          </div>
+        )}
+
+        {/* TAB 1: NOTÍCIAS */}
+        {activeTab === 'noticias' && (
+          <div>
+            {loading ? (
+              <div className="flex items-center justify-center py-24">
+                <Loader2 className="w-6 h-6 text-[#d9251d] animate-spin" />
+              </div>
+            ) : filteredArticles.length === 0 ? (
+              <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-xs">
+                <Newspaper className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                <h3 className="text-sm font-bold text-gray-800 mb-1">
+                  {searchQuery || statusFilter !== 'todos'
+                    ? 'Nenhuma notícia encontrada com os filtros aplicados'
+                    : 'Ainda não há notícias'}
+                </h3>
+                <p className="text-xs text-gray-500 mb-4">
+                  {searchQuery || statusFilter !== 'todos'
+                    ? 'Tente ajustar o termo de pesquisa ou os filtros de estado.'
+                    : 'Comece por publicar a primeira notícia.'}
+                </p>
+                <button
+                  onClick={() => {
+                    setEditingArticle(null);
+                    setArticleDefaultCategory('politica');
+                    setArticleFormOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 bg-[#d9251d] hover:bg-[#b91e17] text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Nova Notícia
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+                {filteredArticles.map((article) => (
+                  <div
+                    key={article.id}
+                    className="flex items-center gap-4 px-5 py-4 border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafafa] transition-colors"
+                  >
+                    <img
+                      src={article.imageUrl}
+                      alt=""
+                      className="w-16 h-16 object-cover rounded-lg shrink-0 bg-gray-100"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-[10px] font-bold text-[#d9251d] uppercase tracking-wide">
+                          {article.category}
+                        </span>
+                        {article.isPublished !== false ? (
+                          <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                            Publicado
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                            Rascunho
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleArticleFeatured(article)}
+                          className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors cursor-pointer ${
+                            article.isFeatured || article.isCarousel
+                              ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300/60'
+                              : 'bg-gray-100 text-gray-400 hover:bg-gray-200 border border-transparent'
+                          }`}
+                          title={
+                            article.isFeatured || article.isCarousel
+                              ? 'Notícia em Destaque nos Slides. Clique para remover do carrossel.'
+                              : 'Notícia não destacada. Clique para colocar nos slides do carrossel.'
+                          }
+                        >
+                          <Star
+                            className={`w-3 h-3 ${
+                              article.isFeatured || article.isCarousel
+                                ? 'fill-amber-500 text-amber-500'
+                                : 'text-gray-400'
+                            }`}
+                          />
+                          <span>
+                            {article.isFeatured || article.isCarousel
+                              ? 'Destaque (Slides)'
+                              : 'Sem Destaque'}
+                          </span>
+                        </button>
+                      </div>
+                      <h3 className="text-sm font-semibold text-[#111] truncate">{article.title}</h3>
+                      <p className="text-[11px] text-gray-500">{article.date}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleToggleArticlePublish(article)}
+                        className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                          article.isPublished !== false
+                            ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        }`}
+                      >
+                        {article.isPublished !== false ? 'Despublicar' : 'Publicar'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingArticle(article);
+                          setArticleDefaultCategory(article.categoryId || 'politica');
+                          setArticleFormOpen(true);
+                        }}
+                        className="p-2 rounded-lg text-[#444] hover:text-[#d9251d] hover:bg-red-50 transition-colors cursor-pointer"
+                        title="Editar notícia"
+                        aria-label="Editar"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      {confirmDeleteId === article.id ? (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleDeleteArticle(article.id)}
+                            disabled={deletingId === article.id}
+                            className="text-[11px] font-bold text-white bg-[#d9251d] px-2.5 py-1.5 rounded-lg cursor-pointer"
+                          >
+                            {deletingId === article.id ? '...' : 'Confirmar'}
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="text-[11px] font-semibold text-[#666] px-2 py-1.5 cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteId(article.id)}
+                          className="p-2 rounded-lg text-[#444] hover:text-[#d9251d] hover:bg-red-50 transition-colors cursor-pointer"
+                          title="Eliminar notícia"
+                          aria-label="Remover"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB: BLOG & OPINIÃO */}
+        {activeTab === 'blog' && (
+          <div>
+            {loading ? (
+              <div className="flex items-center justify-center py-24">
+                <Loader2 className="w-6 h-6 text-orange-600 animate-spin" />
+              </div>
+            ) : filteredBlogArticles.length === 0 ? (
+              <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-xs">
+                <Feather className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                <h3 className="text-sm font-bold text-gray-800 mb-1">
+                  {searchQuery || statusFilter !== 'todos'
+                    ? 'Nenhuma matéria no blog encontrada com os filtros aplicados'
+                    : 'Ainda não há matérias no blog'}
+                </h3>
+                <p className="text-xs text-gray-500 mb-4 max-w-md mx-auto">
+                  {searchQuery || statusFilter !== 'todos'
+                    ? 'Tente ajustar o termo de pesquisa ou os filtros de estado.'
+                    : 'Publique ensaios, reflexões diplomáticas e artigos de opinião dos colaboradores da Revista Mosaico Angola.'}
+                </p>
+                <button
+                  onClick={() => {
+                    setEditingArticle(null);
+                    setArticleDefaultCategory('blog');
+                    setArticleFormOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Nova Matéria no Blog
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+                {filteredBlogArticles.map((article) => (
+                  <div
+                    key={article.id}
+                    className="flex items-center gap-4 px-5 py-4 border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafafa] transition-colors"
+                  >
+                    <img
+                      src={article.imageUrl}
+                      alt=""
+                      className="w-16 h-16 object-cover rounded-lg shrink-0 bg-gray-100"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                        <span className="text-[10px] font-bold text-orange-600 uppercase tracking-wide bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200/60">
+                          {article.category || 'Blog & Opinião'}
+                        </span>
+                        {article.author?.name && (
+                          <span className="text-[10px] text-gray-600 font-medium bg-gray-100 px-2 py-0.5 rounded-md truncate max-w-[200px]">
+                            Por: {article.author.name}
+                          </span>
+                        )}
+                        {article.isPublished !== false ? (
+                          <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                            Publicado
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                            Rascunho
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleArticleFeatured(article)}
+                          className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors cursor-pointer ${
+                            article.isFeatured || article.isCarousel
+                              ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300/60'
+                              : 'bg-gray-100 text-gray-400 hover:bg-gray-200 border border-transparent'
+                          }`}
+                          title={
+                            article.isFeatured || article.isCarousel
+                              ? 'Artigo em Destaque nos Slides. Clique para remover do carrossel.'
+                              : 'Artigo não destacado. Clique para colocar nos slides do carrossel.'
+                          }
+                        >
+                          <Star
+                            className={`w-3 h-3 ${
+                              article.isFeatured || article.isCarousel
+                                ? 'fill-amber-500 text-amber-500'
+                                : 'text-gray-400'
+                            }`}
+                          />
+                          <span>
+                            {article.isFeatured || article.isCarousel
+                              ? 'Destaque (Slides)'
+                              : 'Sem Destaque'}
+                          </span>
+                        </button>
+                      </div>
+                      <h3 className="text-sm font-semibold text-[#111] truncate">{article.title}</h3>
+                      <p className="text-[11px] text-gray-500">
+                        {article.date} {article.author?.role ? `• ${article.author.role}` : ''}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleToggleArticlePublish(article)}
+                        className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                          article.isPublished !== false
+                            ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        }`}
+                      >
+                        {article.isPublished !== false ? 'Despublicar' : 'Publicar'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingArticle(article);
+                          setArticleDefaultCategory('blog');
+                          setArticleFormOpen(true);
+                        }}
+                        className="p-2 rounded-lg text-[#444] hover:text-orange-600 hover:bg-orange-50 transition-colors cursor-pointer"
+                        title="Editar matéria"
+                        aria-label="Editar"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      {confirmDeleteId === article.id ? (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleDeleteArticle(article.id)}
+                            disabled={deletingId === article.id}
+                            className="text-[11px] font-bold text-white bg-[#d9251d] px-2.5 py-1.5 rounded-lg cursor-pointer"
+                          >
+                            {deletingId === article.id ? '...' : 'Confirmar'}
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="text-[11px] font-semibold text-[#666] px-2 py-1.5 cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteId(article.id)}
+                          className="p-2 rounded-lg text-[#444] hover:text-[#d9251d] hover:bg-red-50 transition-colors cursor-pointer"
+                          title="Eliminar matéria"
+                          aria-label="Remover"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 2: EDIÇÕES DA REVISTA MOSAICO ANGOLA */}
+        {activeTab === 'edicoes' && (
+          <div>
+            {filteredMagazineEditions.length === 0 ? (
+              <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-xs">
+                <BookMarked className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                <h3 className="text-sm font-bold text-gray-800 mb-1">
+                  {searchQuery || statusFilter !== 'todos'
+                    ? 'Nenhuma edição encontrada com os filtros aplicados'
+                    : 'Ainda não há edições da revista registadas'}
+                </h3>
+                <p className="text-xs text-gray-500 mb-4">
+                  {searchQuery || statusFilter !== 'todos'
+                    ? 'Tente ajustar o termo de pesquisa ou o filtro de estado.'
+                    : 'Adicione edições trimestrais da Revista Mosaico Angola com capa, sumário e destaques.'}
+                </p>
+                <button
+                  onClick={() => {
+                    setEditingEdition(null);
+                    setEditionFormOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Nova Edição
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+                {filteredMagazineEditions.map((edition) => (
+                  <div
+                    key={edition.id}
+                    className="flex items-center gap-4 px-5 py-4 border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafafa] transition-colors"
+                  >
+                    <div className="relative w-14 h-18 rounded-lg overflow-hidden shrink-0 bg-gray-100 border border-gray-200 shadow-xs">
+                      <img
+                        src={edition.coverImage}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute top-1 left-1 bg-black/75 text-white text-[9px] font-black px-1 rounded">
+                        #{edition.editionNumber}
+                      </div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wide">
+                          Edição nº {edition.editionNumber} • {edition.period} {edition.year}
+                        </span>
+                        <span className="text-[10px] font-bold bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">
+                          {edition.pagesCount} Páginas
+                        </span>
+                        {edition.isPublished !== false ? (
+                          <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                            Publicado
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                            Rascunho
+                          </span>
+                        )}
+                        {edition.pdfUrl && (
+                          <span className="text-[10px] font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full hidden sm:inline">
+                            PDF Anexado
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-sm font-semibold text-[#111] truncate">{edition.title}</h3>
+                      <p className="text-[11px] text-gray-600 font-medium line-clamp-1">{edition.theme}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-1">
+                        {edition.editorialNote}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleToggleEditionPublish(edition)}
+                        className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                          edition.isPublished !== false
+                            ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        }`}
+                      >
+                        {edition.isPublished !== false ? 'Despublicar' : 'Publicar'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingEdition(edition);
+                          setEditionFormOpen(true);
+                        }}
+                        className="p-2 rounded-lg text-[#444] hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+                        title="Editar edição"
+                        aria-label="Editar"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      {confirmDeleteId === edition.id ? (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleDeleteEdition(edition.id)}
+                            disabled={deletingId === edition.id}
+                            className="text-[11px] font-bold text-white bg-[#d9251d] px-2.5 py-1.5 rounded-lg cursor-pointer"
+                          >
+                            {deletingId === edition.id ? '...' : 'Confirmar'}
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="text-[11px] font-semibold text-[#666] px-2 py-1.5 cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteId(edition.id)}
+                          className="p-2 rounded-lg text-[#444] hover:text-[#d9251d] hover:bg-red-50 transition-colors cursor-pointer"
+                          title="Eliminar edição da revista"
+                          aria-label="Remover"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 3: GALERIA DE IMAGENS */}
+        {activeTab === 'galeria' && (
+          <div>
+            {filteredGalleryItems.length === 0 ? (
+              <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-xs">
+                <ImageIcon className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                <h3 className="text-sm font-bold text-gray-800 mb-1">
+                  {searchQuery || statusFilter !== 'todos'
+                    ? 'Nenhum registo fotográfico encontrado com os filtros aplicados'
+                    : 'Ainda não há imagens na galeria'}
+                </h3>
+                <p className="text-xs text-gray-500 mb-4">
+                  {searchQuery || statusFilter !== 'todos'
+                    ? 'Tente ajustar o termo de pesquisa ou o filtro de estado.'
+                    : 'Adicione fotografias e registos visuais oficiais.'}
+                </p>
+                <button
+                  onClick={() => {
+                    setEditingGalleryItem(null);
+                    setGalleryFormOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Nova Imagem
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+                {filteredGalleryItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-4 px-5 py-4 border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafafa] transition-colors"
+                  >
+                    <img
+                      src={item.image}
+                      alt=""
+                      className="w-16 h-16 object-cover rounded-lg shrink-0 bg-gray-100"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wide">
+                          {item.category}
+                        </span>
+                        {item.isPublished !== false ? (
+                          <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                            Publicado
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                            Rascunho
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-sm font-semibold text-[#111] truncate">{item.title}</h3>
+                      <p className="text-[11px] text-gray-500 line-clamp-1">{item.description}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] text-gray-400">{item.date}</span>
+                        {item.collection && (
+                          <span className="text-[10px] font-medium text-purple-700 bg-purple-50 px-2 py-0.5 rounded">
+                            Colecção: {item.collection}
+                          </span>
+                        )}
+                        {item.images && item.images.length > 1 && (
+                          <span className="text-[10px] font-medium text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                            {item.images.length} fotos
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleToggleGalleryPublish(item)}
+                        className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                          item.isPublished !== false
+                            ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        }`}
+                      >
+                        {item.isPublished !== false ? 'Despublicar' : 'Publicar'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingGalleryItem(item);
+                          setGalleryFormOpen(true);
+                        }}
+                        className="p-2 rounded-lg text-[#444] hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+                        title="Editar imagem"
+                        aria-label="Editar"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      {confirmDeleteId === item.id ? (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleDeleteGallery(item.id)}
+                            disabled={deletingId === item.id}
+                            className="text-[11px] font-bold text-white bg-[#d9251d] px-2.5 py-1.5 rounded-lg cursor-pointer"
+                          >
+                            {deletingId === item.id ? '...' : 'Confirmar'}
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="text-[11px] font-semibold text-[#666] px-2 py-1.5 cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteId(item.id)}
+                          className="p-2 rounded-lg text-[#444] hover:text-[#d9251d] hover:bg-red-50 transition-colors cursor-pointer"
+                          title="Eliminar imagem da galeria"
+                          aria-label="Remover"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 3: VÍDEOS */}
+        {activeTab === 'videos' && (
+          <div>
+            {filteredVideoItems.length === 0 ? (
+              <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-xs">
+                <VideoIcon className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                <h3 className="text-sm font-bold text-gray-800 mb-1">
+                  {searchQuery || statusFilter !== 'todos'
+                    ? 'Nenhum vídeo encontrado com os filtros aplicados'
+                    : 'Ainda não há vídeos registados'}
+                </h3>
+                <p className="text-xs text-gray-500 mb-4">
+                  {searchQuery || statusFilter !== 'todos'
+                    ? 'Tente ajustar o termo de pesquisa ou o filtro de estado.'
+                    : 'Adicione reportagens, transmissões e documentários.'}
+                </p>
+                <button
+                  onClick={() => {
+                    setEditingVideoItem(null);
+                    setVideoFormOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Novo Vídeo
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+                {filteredVideoItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-4 px-5 py-4 border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafafa] transition-colors"
+                  >
+                    <div className="relative w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-gray-100">
+                      <img
+                        src={item.image}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                        <Play className="w-4 h-4 text-white fill-white" />
+                      </div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-[10px] font-bold text-purple-600 uppercase tracking-wide">
+                          {item.category}
+                        </span>
+                        <span className="text-[10px] font-bold bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">
+                          ⏱ {item.duration}
+                        </span>
+                        {item.isPublished !== false ? (
+                          <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                            Publicado
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                            Rascunho
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-sm font-semibold text-[#111] truncate">{item.title}</h3>
+                      <p className="text-[11px] text-gray-500 line-clamp-1">{item.description}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1.5">
+                        <span>{item.date}</span>
+                        {item.videoUrl && (
+                          <span className="flex items-center gap-1 text-gray-500 font-mono text-[9px] bg-gray-100 px-1.5 py-0.5 rounded max-w-xs truncate">
+                            <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+                            {item.videoUrl}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleToggleVideoPublish(item)}
+                        className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                          item.isPublished !== false
+                            ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        }`}
+                      >
+                        {item.isPublished !== false ? 'Despublicar' : 'Publicar'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingVideoItem(item);
+                          setVideoFormOpen(true);
+                        }}
+                        className="p-2 rounded-lg text-[#444] hover:text-purple-600 hover:bg-purple-50 transition-colors cursor-pointer"
+                        title="Editar vídeo"
+                        aria-label="Editar"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      {confirmDeleteId === item.id ? (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleDeleteVideo(item.id)}
+                            disabled={deletingId === item.id}
+                            className="text-[11px] font-bold text-white bg-[#d9251d] px-2.5 py-1.5 rounded-lg cursor-pointer"
+                          >
+                            {deletingId === item.id ? '...' : 'Confirmar'}
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="text-[11px] font-semibold text-[#666] px-2 py-1.5 cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteId(item.id)}
+                          className="p-2 rounded-lg text-[#444] hover:text-[#d9251d] hover:bg-red-50 transition-colors cursor-pointer"
+                          title="Eliminar vídeo"
+                          aria-label="Remover"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB: AS 7 MARAVILHAS NATURAIS DE ANGOLA */}
+        {activeTab === 'maravilhas' && (
+          <div className="space-y-4">
+            <div className="bg-emerald-900/10 border border-emerald-900/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <Compass className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-emerald-950">
+                    7 Maravilhas Naturais e Turismo de Angola
+                  </h3>
+                  <p className="text-xs text-emerald-800">
+                    Faça a gestão completa dos patrimónios naturais, províncias, fotografias, destaques e fichas turísticas.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setEditingWonder(null);
+                  setWonderFormOpen(true);
+                }}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Adicionar Maravilha</span>
+              </button>
+            </div>
+
+            {filteredNaturalWonders.length === 0 ? (
+              <div className="bg-white rounded-2xl p-12 text-center border border-gray-200 shadow-xs">
+                <Compass className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <h3 className="text-base font-bold text-[#111] mb-1">
+                  Nenhuma maravilha encontrada
+                </h3>
+                <p className="text-xs text-gray-500 mb-4">
+                  {searchQuery ? 'Nenhum resultado corresponde à pesquisa.' : 'Ainda não existem maravilhas registadas.'}
+                </p>
+                <button
+                  onClick={() => {
+                    setEditingWonder(null);
+                    setWonderFormOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Criar Primeira Maravilha</span>
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3">
+                {filteredNaturalWonders.map((wonder) => (
+                  <div
+                    key={wonder.id}
+                    className="bg-white rounded-xl p-4 border border-gray-200/80 shadow-xs hover:border-gray-300 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                  >
+                    <div className="flex items-start sm:items-center gap-3.5 min-w-0 flex-1">
+                      <div className="relative w-24 h-20 sm:w-28 sm:h-20 rounded-lg overflow-hidden shrink-0 bg-stone-100 border border-gray-200">
+                        <img
+                          src={wonder.image}
+                          alt={wonder.name}
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute top-1 left-1 bg-[#d9251d] text-white text-[10px] font-black w-5 h-5 rounded-md flex items-center justify-center shadow-xs">
+                          #{wonder.number}
+                        </div>
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                            Província de {wonder.province}
+                          </span>
+                          {wonder.isPublished !== false ? (
+                            <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                              Publicado
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                              Rascunho
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="text-sm sm:text-base font-bold text-[#111] truncate">
+                          {wonder.name}
+                        </h3>
+                        <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">
+                          {wonder.tagline || wonder.summary}
+                        </p>
+                        <p className="text-[11px] text-gray-400 mt-1 flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-gray-400 shrink-0" />
+                          <span className="truncate">{wonder.location}</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                      <button
+                        onClick={() => handleToggleWonderPublish(wonder)}
+                        className={`text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                          wonder.isPublished !== false
+                            ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        }`}
+                      >
+                        {wonder.isPublished !== false ? 'Despublicar' : 'Publicar'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingWonder(wonder);
+                          setWonderFormOpen(true);
+                        }}
+                        className="p-2 rounded-lg text-[#444] hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
+                        title="Editar maravilha natural"
+                        aria-label="Editar"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      {confirmDeleteId === wonder.id ? (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleDeleteWonder(wonder.id)}
+                            disabled={deletingId === wonder.id}
+                            className="text-[11px] font-bold text-white bg-[#d9251d] px-2.5 py-1.5 rounded-lg cursor-pointer"
+                          >
+                            {deletingId === wonder.id ? '...' : 'Confirmar'}
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="text-[11px] font-semibold text-[#666] px-2 py-1.5 cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteId(wonder.id)}
+                          className="p-2 rounded-lg text-[#444] hover:text-[#d9251d] hover:bg-red-50 transition-colors cursor-pointer"
+                          title="Eliminar maravilha natural"
+                          aria-label="Remover"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {/* TAB: DOCUMENTOS CONSULARES */}
+        {activeTab === 'documentos' && (
+          <div className="space-y-4">
+            <div className="bg-rose-950/10 border border-rose-900/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-800 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-rose-950">
+                    Documentos e Requerimentos Consulares Oficiais
+                  </h3>
+                  <p className="text-xs text-rose-800">
+                    Faça a gestão dos formulários descarregáveis, minutas, requisitos exigidos e modelos para visto, passaporte e registo consular.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setEditingConsularDoc(null);
+                  setConsularDocFormOpen(true);
+                }}
+                className="bg-rose-800 hover:bg-rose-900 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Adicionar Documento</span>
+              </button>
+            </div>
+
+            {filteredConsularDocs.length === 0 ? (
+              <div className="bg-white rounded-2xl p-12 text-center border border-gray-200 shadow-xs">
+                <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <h3 className="text-base font-bold text-[#111] mb-1">
+                  Nenhum documento consular encontrado
+                </h3>
+                <p className="text-xs text-gray-500 mb-4">
+                  {searchQuery ? 'Nenhum resultado corresponde à pesquisa.' : 'Ainda não existem documentos consulares registados.'}
+                </p>
+                <button
+                  onClick={() => {
+                    setEditingConsularDoc(null);
+                    setConsularDocFormOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Criar Primeiro Documento</span>
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3">
+                {filteredConsularDocs.map((doc) => (
+                  <div
+                    key={doc.id}
+                    className="bg-white rounded-xl p-4 sm:p-5 border border-gray-200/80 shadow-xs hover:border-gray-300 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                  >
+                    <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                      <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-800 flex items-center justify-center shrink-0 border border-rose-100">
+                        <FileText className="w-5 h-5" />
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                          <span className="text-[10px] font-mono font-bold text-rose-800 bg-rose-100/70 px-2 py-0.5 rounded-md">
+                            {doc.code}
+                          </span>
+                          <span className="text-[10px] font-bold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-md">
+                            {doc.categoryLabel || doc.category}
+                          </span>
+                          {doc.targetAudience && (
+                            <span className="text-[10px] font-medium text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
+                              {doc.targetAudience}
+                            </span>
+                          )}
+                          {doc.badge && (
+                            <span className="text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full">
+                              {doc.badge}
+                            </span>
+                          )}
+                          {doc.isPublished !== false ? (
+                            <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                              Publicado
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                              Rascunho
+                            </span>
+                          )}
+                        </div>
+
+                        <h3 className="text-sm sm:text-base font-bold text-[#111] leading-snug">
+                          {doc.title}
+                        </h3>
+
+                        <p className="text-xs text-gray-500 line-clamp-2 mt-1 leading-relaxed">
+                          {doc.description}
+                        </p>
+
+                        <div className="flex flex-wrap items-center gap-3 mt-2 text-[11px] text-gray-500">
+                          <span className="font-semibold text-rose-800 bg-rose-50 px-2 py-0.5 rounded-md">
+                            {doc.requirements?.length || 0} requisitos exigidos
+                          </span>
+                          <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-700 font-bold">
+                            {doc.fileFormat} • {doc.fileSize}
+                          </span>
+                          {doc.fileUrl && (
+                            <span className="text-emerald-700 flex items-center gap-1 font-semibold">
+                              <CheckCircle2 className="w-3 h-3" /> Ficheiro anexo oficial
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                      <button
+                        onClick={() => generateAndDownloadConsularDocument(doc)}
+                        className="text-[11px] font-semibold text-gray-700 hover:text-rose-800 bg-gray-100 hover:bg-rose-50 px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                        title="Testar descarregamento do documento"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Descarregar</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleToggleConsularDocPublish(doc)}
+                        className={`text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                          doc.isPublished !== false
+                            ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                            : 'bg-rose-800 hover:bg-rose-900 text-white'
+                        }`}
+                      >
+                        {doc.isPublished !== false ? 'Despublicar' : 'Publicar'}
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setEditingConsularDoc(doc);
+                          setConsularDocFormOpen(true);
+                        }}
+                        className="p-2 rounded-lg text-[#444] hover:text-rose-800 hover:bg-rose-50 transition-colors cursor-pointer"
+                        title="Editar documento consular"
+                        aria-label="Editar"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+
+                      {confirmDeleteId === doc.id ? (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleDeleteConsularDoc(doc.id)}
+                            disabled={deletingId === doc.id}
+                            className="text-[11px] font-bold text-white bg-[#d9251d] px-2.5 py-1.5 rounded-lg cursor-pointer"
+                          >
+                            {deletingId === doc.id ? '...' : 'Confirmar'}
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="text-[11px] font-semibold text-[#666] px-2 py-1.5 cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteId(doc.id)}
+                          className="p-2 rounded-lg text-[#444] hover:text-[#d9251d] hover:bg-red-50 transition-colors cursor-pointer"
+                          title="Eliminar documento consular"
+                          aria-label="Remover"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {/* TAB 7: AGENDA CULTURAL */}
+        {activeTab === 'agenda-cultural' && (
+          <AdminCulturalAgendaSection
+            culturalEvents={culturalEvents}
+            searchQuery={searchQuery}
+            statusFilter={statusFilter}
+            createTrigger={culturalCreateTrigger}
+            onEventsChanged={onCulturalEventsChanged}
+            onShowToast={onShowToast}
+          />
+        )}
+
+        {/* TAB 8: AGENDA MISSÃO DIPLOMÁTICA */}
+        {activeTab === 'agenda-diplomatica' && (
+          <AdminDiplomaticAgendaSection
+            diplomaticEvents={diplomaticEvents}
+            searchQuery={searchQuery}
+            statusFilter={statusFilter}
+            createTrigger={diplomaticCreateTrigger}
+            onEventsChanged={onDiplomaticEventsChanged}
+            onShowToast={onShowToast}
+          />
+        )}
+
+        {/* TAB 9: DADOS DA EMBAIXADA */}
+        {activeTab === 'dados-embaixada' && (
+          <AdminEmbassyInfoSection
+            embassyInfo={embassyInfo}
+            onEmbassyInfoChanged={onEmbassyInfoChanged}
+            onShowToast={onShowToast}
+          />
+        )}
+          </div>
+        </div>
+      </main>
+
+      {/* ARTICLE FORM MODAL */}
+      {articleFormOpen && (
+        <ArticleFormModal
+          initialArticle={editingArticle}
+          defaultCategoryId={articleDefaultCategory}
+          onClose={() => {
+            setArticleFormOpen(false);
+            setEditingArticle(null);
+          }}
+          onSave={handleSaveArticle}
+        />
+      )}
+
+      {/* CONSULAR DOC FORM MODAL */}
+      {consularDocFormOpen && (
+        <ConsularDocFormModal
+          initialDoc={editingConsularDoc}
+          onClose={() => {
+            setConsularDocFormOpen(false);
+            setEditingConsularDoc(null);
+          }}
+          onSave={handleSaveConsularDoc}
+        />
+      )}
+
+      {/* GALLERY FORM MODAL */}
+      {galleryFormOpen && (
+        <GalleryFormModal
+          initialItem={editingGalleryItem}
+          onClose={() => {
+            setGalleryFormOpen(false);
+            setEditingGalleryItem(null);
+          }}
+          onSave={handleSaveGallery}
+        />
+      )}
+
+      {/* VIDEO FORM MODAL */}
+      {videoFormOpen && (
+        <VideoFormModal
+          initialItem={editingVideoItem}
+          onClose={() => {
+            setVideoFormOpen(false);
+            setEditingVideoItem(null);
+          }}
+          onSave={handleSaveVideo}
+        />
+      )}
+
+      {/* EDITION FORM MODAL */}
+      {editionFormOpen && (
+        <EditionFormModal
+          initialEdition={editingEdition}
+          onClose={() => {
+            setEditionFormOpen(false);
+            setEditingEdition(null);
+          }}
+          onSave={handleSaveEdition}
+        />
+      )}
+
+      {/* NATURAL WONDERS FORM MODAL */}
+      {wonderFormOpen && (
+        <WonderFormModal
+          initialWonder={editingWonder}
+          onClose={() => {
+            setWonderFormOpen(false);
+            setEditingWonder(null);
+          }}
+          onSave={handleSaveWonder}
+        />
+      )}
+
+      {/* DATABASE DIAGNOSTIC MODAL */}
+      {dbStatusOpen && (
+        <DatabaseStatusModal
+          onClose={() => setDbStatusOpen(false)}
+          onShowToast={onShowToast}
+          onRefreshAll={() => {
+            onArticlesChanged();
+            onGalleryChanged();
+            onVideosChanged();
+            onEditionsChanged();
+            onWondersChanged();
+            onConsularDocsChanged();
+            onCulturalEventsChanged();
+            onDiplomaticEventsChanged();
+          }}
+        />
+      )}
+
+      {/* BACKUP & DISASTER RECOVERY MODAL */}
+      {backupModalOpen && (
+        <BackupModal
+          onClose={() => setBackupModalOpen(false)}
+          onShowToast={onShowToast}
+          data={{
+            articles,
+            galleryItems,
+            videoItems,
+            magazineEditions,
+            naturalWonders,
+            consularDocs,
+            culturalEvents,
+            diplomaticEvents,
+            embassyInfo,
+            userEmail: user?.email,
+          }}
+        />
+      )}
+    </div>
+  );
+};

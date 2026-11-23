@@ -1,0 +1,223 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+export type CategoryId = 
+  | 'politica'
+  | 'analise-global' 
+  | 'angolberica'
+  | 'economia'
+  | 'panorama-consular' 
+  | 'kamba-cultura'
+  | 'kultura-360' 
+  | 'turismo'
+  | 'todas'
+  | 'historia'
+  | 'blog';
+
+export type NavPage = 
+  | 'home' 
+  | 'sobre' 
+  | 'politica'
+  | 'analise-global' 
+  | 'angolberica'
+  | 'economia'
+  | 'panorama-consular' 
+  | 'kamba-cultura'
+  | 'kultura-360' 
+  | 'turismo' 
+  | 'maravilhas'
+  | 'todas' 
+  | 'agenda-cultural'
+  | 'agenda-diplomatica'
+  | 'feed' 
+  | 'favorites' 
+  | 'history' 
+  | 'blog'
+  | 'edicoes'
+  | 'galeria'
+  | 'videos'
+  | 'admin';
+
+export interface Comment {
+  id: string;
+  author: string;
+  avatar?: string;
+  role?: string;
+  date: string;
+  content: string;
+  likes: number;
+  likedByUser?: boolean;
+  replies?: Comment[];
+}
+
+export interface Article {
+  id: string;
+  title: string;
+  subtitle?: string;
+  description: string;
+  fullContent?: string[];
+  category: string;
+  categoryId: CategoryId;
+  author: {
+    name: string;
+    role: string;
+    avatar?: string;
+  };
+  source?: string;
+  date: string;
+  isoDate: string;
+  readTime: string;
+  imageUrl: string;
+  gallery?: string[];
+  likes: number;
+  commentsCount: number;
+  comments?: Comment[];
+  isFeatured?: boolean;
+  isCarousel?: boolean;
+  isPublished?: boolean;
+  tags: string[];
+}
+
+export interface GalleryItem {
+  id: string;
+  title: string;
+  category: string;
+  date: string;
+  description: string;
+  image: string;
+  images?: string[];
+  collection?: string;
+  isPublished?: boolean;
+}
+
+export interface VideoItem {
+  id: string;
+  title: string;
+  category: string;
+  duration: string;
+  date: string;
+  views?: string;
+  description: string;
+  image: string;
+  videoUrl?: string;
+  isPublished?: boolean;
+}
+
+export interface MagazineEdition {
+  id: string;
+  editionNumber: number;
+  title: string;
+  theme: string;
+  period: string;
+  year: number;
+  coverImage: string;
+  pdfUrl?: string;
+  pagesCount: number;
+  highlights: string[];
+  editorialNote: string;
+  isPublished?: boolean;
+}
+
+export interface CulturalEvent {
+  id: string;
+  title: string;
+  category: 'Cinema' | 'Música & Dança' | 'Artes Plásticas' | 'Literatura' | 'Gastronomia' | 'Comunidade';
+  date: string;
+  time: string;
+  location: string;
+  city: string;
+  description: string;
+  organizer: string;
+  imageUrl?: string;
+  registrationRequired?: boolean;
+  highlight?: boolean;
+  isPublished?: boolean;
+  createdAt?: string;
+}
+
+export interface DiplomaticEvent {
+  id: string;
+  title: string;
+  category: 'Cultura' | 'Diplomacia' | 'Consular' | 'Comércio' | 'Académico';
+  date: string;
+  time: string;
+  location: string;
+  city: string;
+  description: string;
+  organizer: string;
+  imageUrl?: string;
+  registrationRequired?: boolean;
+  status?: 'Agendado' | 'Em Curso' | 'Concluído';
+  isPublished?: boolean;
+  createdAt?: string;
+}
+
+export interface ConsularService {
+  id: string;
+  title: string;
+  category: 'Vistos' | 'Passaportes' | 'Registo Civil' | 'Notariado' | 'Outros';
+  processingTime: string;
+  fees: string;
+  requirements: string[];
+  description: string;
+  downloadableForms?: { title: string; filename: string }[];
+}
+
+export interface ConsularDocument {
+  id: string;
+  title: string;
+  code: string;
+  category: 'vistos' | 'identidade' | 'notariado' | 'comunidade' | 'viagem';
+  categoryLabel: string;
+  description: string;
+  fileFormat: 'PDF' | 'DOCX';
+  fileSize: string;
+  requirements: string[];
+  instructions: string;
+  targetAudience: 'Cidadãos Angolanos' | 'Cidadãos Estrangeiros' | 'Geral';
+  downloadFileName: string;
+  badge?: string;
+  fileUrl?: string;
+  isPublished?: boolean;
+}
+
+export interface HistoricalMilestone {
+  year: number;
+  dateStr: string;
+  title: string;
+  description: string;
+  significance: string;
+  imageUrl?: string;
+}
+
+export interface EmbassyInfo {
+  id: string;
+  name: string;
+  jurisdiction: string;
+  chanceryTitle: string;
+  chancerySubtitle?: string;
+  addressStreet: string;
+  addressDetails?: string;
+  postalCode: string;
+  city: string;
+  country: string;
+  phonePrimary: string;
+  phoneSecondary?: string;
+  fax?: string;
+  emailGeneral: string;
+  emailAmbassador?: string;
+  emailConsular?: string;
+  emailCommercial?: string;
+  officeHours: string;
+  consularHours?: string;
+  website: string;
+  institutionalPortal: string;
+  googleMapsUrl?: string;
+  socialFacebook?: string;
+  socialInstagram?: string;
+  socialLinkedin?: string;
+  socialX?: string;
+  updatedAt?: string;
+}

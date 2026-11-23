@@ -1,0 +1,8 @@
+# Contacto oficial de segurança e divulgação de vulnerabilidades
+# Revista Mosaico Angola - Embaixada da República de Angola no Reino de Espanha e Principado de Andorra
+Contact: mailto:seguranca@mosaico.ao
+Contact: mailto:embaixada@embajadadeangola.com
+Expires: 2027-12-31T23:59:59.000Z
+Preferred-Languages: pt, es, en
+Canonical: https://mosaico.ao/.well-known/security.txt
+Policy: https://mosaico.ao/sobre
